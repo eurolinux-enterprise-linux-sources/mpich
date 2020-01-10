@@ -3,7 +3,7 @@
 Summary:	A high-performance implementation of MPI
 Name:		mpich
 Version:	3.0.4
-Release:	7%{?dist}
+Release:	8%{?dist}
 License:	MIT
 Group:		Development/Libraries
 URL:		http://www.mpich.org
@@ -112,7 +112,7 @@ Contains documentations, examples and manpages for mpich
 %global m_option -m%{__isa_bits}
 %endif
 
-%ifarch %{arm}
+%ifarch %{arm} aarch64
 %global m_option ""
 %endif
 
@@ -288,6 +288,10 @@ fi
 %{_mandir}/%{name}/man3/
 
 %changelog
+* Wed Sep 10 2014 Yaakov Selkowitz <yselkowi@redhat.com> - 3.0.4-8
+- Do not use -m64 on AArch64
+  Resolves: rhbz1077315
+
 * Mon Mar 3 2014 Jay Fenlason <fenlason@redhat.com> - 3.0.4-7
 - Update build flags to fix
   Resolves: rhbz1070778
