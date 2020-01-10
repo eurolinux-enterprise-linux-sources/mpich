@@ -3,7 +3,7 @@
 Summary:	A high-performance implementation of MPI
 Name:		mpich
 Version:	3.1
-Release:	4%{?dist}
+Release:	5%{?dist}
 License:	MIT
 Group:		Development/Libraries
 URL:		http://www.mpich.org
@@ -261,6 +261,10 @@ rm -f %{buildroot}%{_libdir}/%{name}/lib/lib{*mpich*,opa,mpl}.a
 %{_mandir}/%{name}/man3/
 
 %changelog
+* Mon Jan 18 2016 Michal Schmidt <mschmidt@redhat.com> - 3.1-5
+- Rebuild against libhwloc.so.5.
+  Resolves: rhbz1170799
+
 * Thu Aug 21 2014 Michal Schmidt <mschmidt@redhat.com> - 3.1-4
 - Obsolete mpich2's subpackages too. Use versioned Obsoletes.
   Resolves: rhbz1130083
