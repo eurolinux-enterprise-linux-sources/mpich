@@ -1,0 +1,1570 @@
+diff -rup mpich-3.1-rh.old/Makefile.in mpich-3.1-rh/Makefile.in
+--- mpich-3.1-rh.old/Makefile.in	2014-05-28 15:57:19.000000000 -0400
++++ mpich-3.1-rh/Makefile.in	2014-05-28 16:22:44.000000000 -0400
+@@ -664,41 +664,12 @@ DIST_COMMON = $(srcdir)/maint/Makefile.m
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/tcp/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/none/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/newmad/Makefile.mk \
+-	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/scif/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/portals4/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/ib/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/monitor/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/replacements/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/sock/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/ch3/channels/sock/src/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/barrier/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/bcast/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/allreduce/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/allgather/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/allgatherv/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/scatterv/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/scatter/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/gather/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/alltoall/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/alltoallv/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/gatherv/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/scan/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/reduce/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/alltoallw/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/exscan/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/ired_scat_block/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/coll/ired_scat/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/comm/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/misc/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/mpix/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/onesided/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/pamix/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/pt2pt/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/pt2pt/persistent/Makefile.mk \
+-	$(top_srcdir)/src/mpid/pamid/src/dyntask/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/common/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/common/datatype/Makefile.mk \
+ 	$(top_srcdir)/src/mpid/common/datatype/dataloop/Makefile.mk \
+@@ -1298,17 +1269,6 @@ DIST_COMMON = $(srcdir)/maint/Makefile.m
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_NEWMAD_TRUE@    src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_impl.h               \
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_NEWMAD_TRUE@    src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_extended_interface.h
+ 
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@am__append_64 = \
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@    src/mpid/ch3/channels/nemesis/netmod/scif/scif_finalize.c	\
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@    src/mpid/ch3/channels/nemesis/netmod/scif/scif_init.c	\
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@    src/mpid/ch3/channels/nemesis/netmod/scif/scif_send.c	\
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@    src/mpid/ch3/channels/nemesis/netmod/scif/scifrw.c		\
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@    src/mpid/ch3/channels/nemesis/netmod/scif/scifsm.c
+-
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@am__append_65 = \
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@    src/mpid/ch3/channels/nemesis/netmod/scif/scifrw.h		\
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@    src/mpid/ch3/channels/nemesis/netmod/scif/scif_impl.h
+-
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_PORTALS4_TRUE@am__append_66 = \
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_PORTALS4_TRUE@    src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_init.c		\
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_PORTALS4_TRUE@    src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_pack_byte.c	\
+@@ -1359,224 +1319,6 @@ DIST_COMMON = $(srcdir)/maint/Makefile.m
+ @BUILD_CH3_SOCK_TRUE@@BUILD_CH3_TRUE@    src/mpid/ch3/channels/sock/include/mpidi_ch3_impl.h \
+ @BUILD_CH3_SOCK_TRUE@@BUILD_CH3_TRUE@    src/mpid/ch3/channels/sock/include/mpidi_ch3_post.h
+ 
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-#AM_CPPFLAGS += -I$(top_srcdir)/src/mpid/pamid/src/include   \
+-#               -I$(top_builddir)/src/mpid/pamid/src/include
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-@BUILD_PAMID_TRUE@am__append_75 =  \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_thread.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidimpl.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_mutex.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidpost.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_constants.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_externs.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_util.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_hooks.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_macros.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_datatypes.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_prototypes.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/pamix.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidpre.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/include/mpidi_platform.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_request.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_progress.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_recvq.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpidi_onesided.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_send.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_recv.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_send.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_irecv.h \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_isend.h
+-@BUILD_PAMID_TRUE@am__append_76 = src/mpid/pamid/include/mpix.h
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-
+-# note that the includes always happen but the effects of their contents are
+-# affected by "if BUILD_PAMID"
+-@BUILD_PAMID_TRUE@am__append_77 = src/mpid/pamid/src/coll/barrier/mpido_barrier.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/barrier/mpido_ibarrier.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/bcast/mpido_bcast.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/bcast/mpido_ibcast.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allreduce/mpido_allreduce.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allreduce/mpido_iallreduce.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgather/mpido_allgather.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgather/mpido_iallgather.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgatherv/mpido_allgatherv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgatherv/mpido_iallgatherv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatterv/mpido_scatterv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatterv/mpido_iscatterv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatter/mpido_scatter.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatter/mpido_iscatter.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gather/mpido_gather.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gather/mpido_igather.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoall/mpido_alltoall.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoall/mpido_ialltoall.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoallv/mpido_alltoallv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoallv/mpido_ialltoallv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gatherv/mpido_gatherv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gatherv/mpido_igatherv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scan/mpido_scan.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/reduce/mpido_reduce.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/reduce/mpido_ireduce.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoallw/mpido_ialltoallw.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/exscan/mpido_iexscan.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/ired_scat_block/mpido_ired_scat_block.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/ired_scat/mpido_ired_scat.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/coll_utils.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/comm/mpid_comm.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/comm/mpid_selectcolls.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/comm/mpid_optcolls.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_abort.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_get_universe_size.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_getpname.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_mem.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_unimpl.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpix/mpix.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_1s.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_accumulate.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_create.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_fence.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_free.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_get.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_lock.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_lock_all.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_pscw.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_put.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_shared_query.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_create_dynamic.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_allocate_shared.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_flush.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_allocate.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_sync.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_attach.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_detach.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_get_info.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_set_info.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_get_accumulate.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_reqops.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpidi_win_control.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_compare_and_swap.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_fetch_and_op.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pamix/pamix.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/persistent/mpid_recv_init.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/persistent/mpid_send_init.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/persistent/mpid_startall.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_cancel.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_issend.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_recv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_ssend.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_eager.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_rzv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_short.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_util.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_control.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_done.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_recvmsg.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_rendezvous.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_sendmsg.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpid_comm_spawn_multiple.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpid_comm_disconnect.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpid_port.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpidi_pg.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpidi_port.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_buffer.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_bufmm.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_finalize.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_init.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_iprobe.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_probe.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_progress.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_recvq.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_request.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_time.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_vc.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_env.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_util.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_mutex.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_mrecv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_mprobe.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_imrecv.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_improbe.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_nbc_sched.c \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_recvq_mmap.cpp
+ @BUILD_MPID_COMMON_DATATYPE_TRUE@am__append_78 = src/mpid/common/datatype/dataloop/darray_support.c \
+ @BUILD_MPID_COMMON_DATATYPE_TRUE@	src/mpid/common/datatype/dataloop/dataloop.c \
+ @BUILD_MPID_COMMON_DATATYPE_TRUE@	src/mpid/common/datatype/dataloop/dataloop_create.c \
+@@ -1746,7 +1488,6 @@ am__aclocal_m4_deps = $(top_srcdir)/conf
+ 	$(top_srcdir)/confdb/ltversion.m4 \
+ 	$(top_srcdir)/confdb/lt~obsolete.m4 \
+ 	$(top_srcdir)/maint/version.m4 $(top_srcdir)/subsys_include.m4 \
+-	$(top_srcdir)/src/mpid/pamid/subconfigure.m4 \
+ 	$(top_srcdir)/src/binding/f90/subconfigure.m4 \
+ 	$(top_srcdir)/src/pm/subconfigure.m4 \
+ 	$(top_srcdir)/src/pm/remshell/subconfigure.m4 \
+@@ -1762,7 +1503,6 @@ am__aclocal_m4_deps = $(top_srcdir)/conf
+ 	$(top_srcdir)/src/mpid/common/datatype/subconfigure.m4 \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/subconfigure.m4 \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/newmad/subconfigure.m4 \
+-	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/scif/subconfigure.m4 \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/portals4/subconfigure.m4 \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/tcp/subconfigure.m4 \
+ 	$(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/ib/subconfigure.m4 \
+@@ -2873,11 +2613,6 @@ am__lib_lib@MPILIBNAME@_la_SOURCES_DIST 
+ 	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_cancel.c \
+ 	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_probe.c \
+ 	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_alloc.c \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/scif_finalize.c \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/scif_init.c \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/scif_send.c \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/scifrw.c \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/scifsm.c \
+ 	src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_init.c \
+ 	src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_pack_byte.c \
+ 	src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_poll.c \
+@@ -2902,110 +2637,6 @@ am__lib_lib@MPILIBNAME@_la_SOURCES_DIST 
+ 	src/mpid/ch3/channels/sock/src/ch3_istartmsgv.c \
+ 	src/mpid/ch3/channels/sock/src/ch3_progress.c \
+ 	src/mpid/ch3/channels/sock/src/ch3_win_fns.c \
+-	src/mpid/pamid/src/coll/barrier/mpido_barrier.c \
+-	src/mpid/pamid/src/coll/barrier/mpido_ibarrier.c \
+-	src/mpid/pamid/src/coll/bcast/mpido_bcast.c \
+-	src/mpid/pamid/src/coll/bcast/mpido_ibcast.c \
+-	src/mpid/pamid/src/coll/allreduce/mpido_allreduce.c \
+-	src/mpid/pamid/src/coll/allreduce/mpido_iallreduce.c \
+-	src/mpid/pamid/src/coll/allgather/mpido_allgather.c \
+-	src/mpid/pamid/src/coll/allgather/mpido_iallgather.c \
+-	src/mpid/pamid/src/coll/allgatherv/mpido_allgatherv.c \
+-	src/mpid/pamid/src/coll/allgatherv/mpido_iallgatherv.c \
+-	src/mpid/pamid/src/coll/scatterv/mpido_scatterv.c \
+-	src/mpid/pamid/src/coll/scatterv/mpido_iscatterv.c \
+-	src/mpid/pamid/src/coll/scatter/mpido_scatter.c \
+-	src/mpid/pamid/src/coll/scatter/mpido_iscatter.c \
+-	src/mpid/pamid/src/coll/gather/mpido_gather.c \
+-	src/mpid/pamid/src/coll/gather/mpido_igather.c \
+-	src/mpid/pamid/src/coll/alltoall/mpido_alltoall.c \
+-	src/mpid/pamid/src/coll/alltoall/mpido_ialltoall.c \
+-	src/mpid/pamid/src/coll/alltoallv/mpido_alltoallv.c \
+-	src/mpid/pamid/src/coll/alltoallv/mpido_ialltoallv.c \
+-	src/mpid/pamid/src/coll/gatherv/mpido_gatherv.c \
+-	src/mpid/pamid/src/coll/gatherv/mpido_igatherv.c \
+-	src/mpid/pamid/src/coll/scan/mpido_scan.c \
+-	src/mpid/pamid/src/coll/reduce/mpido_reduce.c \
+-	src/mpid/pamid/src/coll/reduce/mpido_ireduce.c \
+-	src/mpid/pamid/src/coll/alltoallw/mpido_ialltoallw.c \
+-	src/mpid/pamid/src/coll/exscan/mpido_iexscan.c \
+-	src/mpid/pamid/src/coll/ired_scat_block/mpido_ired_scat_block.c \
+-	src/mpid/pamid/src/coll/ired_scat/mpido_ired_scat.c \
+-	src/mpid/pamid/src/coll/coll_utils.c \
+-	src/mpid/pamid/src/comm/mpid_comm.c \
+-	src/mpid/pamid/src/comm/mpid_selectcolls.c \
+-	src/mpid/pamid/src/comm/mpid_optcolls.c \
+-	src/mpid/pamid/src/misc/mpid_abort.c \
+-	src/mpid/pamid/src/misc/mpid_get_universe_size.c \
+-	src/mpid/pamid/src/misc/mpid_getpname.c \
+-	src/mpid/pamid/src/misc/mpid_mem.c \
+-	src/mpid/pamid/src/misc/mpid_unimpl.c \
+-	src/mpid/pamid/src/mpix/mpix.c \
+-	src/mpid/pamid/src/onesided/mpid_1s.c \
+-	src/mpid/pamid/src/onesided/mpid_win_accumulate.c \
+-	src/mpid/pamid/src/onesided/mpid_win_create.c \
+-	src/mpid/pamid/src/onesided/mpid_win_fence.c \
+-	src/mpid/pamid/src/onesided/mpid_win_free.c \
+-	src/mpid/pamid/src/onesided/mpid_win_get.c \
+-	src/mpid/pamid/src/onesided/mpid_win_lock.c \
+-	src/mpid/pamid/src/onesided/mpid_win_lock_all.c \
+-	src/mpid/pamid/src/onesided/mpid_win_pscw.c \
+-	src/mpid/pamid/src/onesided/mpid_win_put.c \
+-	src/mpid/pamid/src/onesided/mpid_win_shared_query.c \
+-	src/mpid/pamid/src/onesided/mpid_win_create_dynamic.c \
+-	src/mpid/pamid/src/onesided/mpid_win_allocate_shared.c \
+-	src/mpid/pamid/src/onesided/mpid_win_flush.c \
+-	src/mpid/pamid/src/onesided/mpid_win_allocate.c \
+-	src/mpid/pamid/src/onesided/mpid_win_sync.c \
+-	src/mpid/pamid/src/onesided/mpid_win_attach.c \
+-	src/mpid/pamid/src/onesided/mpid_win_detach.c \
+-	src/mpid/pamid/src/onesided/mpid_win_get_info.c \
+-	src/mpid/pamid/src/onesided/mpid_win_set_info.c \
+-	src/mpid/pamid/src/onesided/mpid_win_get_accumulate.c \
+-	src/mpid/pamid/src/onesided/mpid_win_reqops.c \
+-	src/mpid/pamid/src/onesided/mpidi_win_control.c \
+-	src/mpid/pamid/src/onesided/mpid_win_compare_and_swap.c \
+-	src/mpid/pamid/src/onesided/mpid_win_fetch_and_op.c \
+-	src/mpid/pamid/src/pamix/pamix.c \
+-	src/mpid/pamid/src/pt2pt/persistent/mpid_recv_init.c \
+-	src/mpid/pamid/src/pt2pt/persistent/mpid_send_init.c \
+-	src/mpid/pamid/src/pt2pt/persistent/mpid_startall.c \
+-	src/mpid/pamid/src/pt2pt/mpid_cancel.c \
+-	src/mpid/pamid/src/pt2pt/mpid_issend.c \
+-	src/mpid/pamid/src/pt2pt/mpid_recv.c \
+-	src/mpid/pamid/src/pt2pt/mpid_ssend.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_callback_eager.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_callback_rzv.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_callback_short.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_callback_util.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_control.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_done.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_recvmsg.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_rendezvous.c \
+-	src/mpid/pamid/src/pt2pt/mpidi_sendmsg.c \
+-	src/mpid/pamid/src/dyntask/mpid_comm_spawn_multiple.c \
+-	src/mpid/pamid/src/dyntask/mpid_comm_disconnect.c \
+-	src/mpid/pamid/src/dyntask/mpid_port.c \
+-	src/mpid/pamid/src/dyntask/mpidi_pg.c \
+-	src/mpid/pamid/src/dyntask/mpidi_port.c \
+-	src/mpid/pamid/src/mpid_buffer.c \
+-	src/mpid/pamid/src/mpidi_bufmm.c \
+-	src/mpid/pamid/src/mpid_finalize.c \
+-	src/mpid/pamid/src/mpid_init.c \
+-	src/mpid/pamid/src/mpid_iprobe.c \
+-	src/mpid/pamid/src/mpid_probe.c \
+-	src/mpid/pamid/src/mpid_progress.c \
+-	src/mpid/pamid/src/mpid_recvq.c \
+-	src/mpid/pamid/src/mpid_request.c \
+-	src/mpid/pamid/src/mpid_time.c src/mpid/pamid/src/mpid_vc.c \
+-	src/mpid/pamid/src/mpidi_env.c src/mpid/pamid/src/mpidi_util.c \
+-	src/mpid/pamid/src/mpidi_mutex.c \
+-	src/mpid/pamid/src/mpid_mrecv.c \
+-	src/mpid/pamid/src/mpid_mprobe.c \
+-	src/mpid/pamid/src/mpid_imrecv.c \
+-	src/mpid/pamid/src/mpid_improbe.c \
+-	src/mpid/pamid/src/mpidi_nbc_sched.c \
+-	src/mpid/pamid/src/mpid_recvq_mmap.cpp \
+ 	src/mpid/common/datatype/dataloop/darray_support.c \
+ 	src/mpid/common/datatype/dataloop/dataloop.c \
+ 	src/mpid/common/datatype/dataloop/dataloop_create.c \
+@@ -3733,11 +3364,6 @@ am__objects_4 = $(am__objects_3)
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_NEWMAD_TRUE@	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_cancel.lo \
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_NEWMAD_TRUE@	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_probe.lo \
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_NEWMAD_TRUE@	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_alloc.lo
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@am__objects_15 = src/mpid/ch3/channels/nemesis/netmod/scif/scif_finalize.lo \
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@	src/mpid/ch3/channels/nemesis/netmod/scif/scif_init.lo \
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@	src/mpid/ch3/channels/nemesis/netmod/scif/scif_send.lo \
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@	src/mpid/ch3/channels/nemesis/netmod/scif/scifrw.lo \
+-@BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_SCIF_TRUE@	src/mpid/ch3/channels/nemesis/netmod/scif/scifsm.lo
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_PORTALS4_TRUE@am__objects_16 = src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_init.lo \
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_PORTALS4_TRUE@	src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_pack_byte.lo \
+ @BUILD_CH3_NEMESIS_TRUE@@BUILD_CH3_TRUE@@BUILD_NEMESIS_NETMOD_PORTALS4_TRUE@	src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_poll.lo \
+@@ -3762,112 +3388,6 @@ am__objects_4 = $(am__objects_3)
+ @BUILD_CH3_SOCK_TRUE@@BUILD_CH3_TRUE@	src/mpid/ch3/channels/sock/src/ch3_istartmsgv.lo \
+ @BUILD_CH3_SOCK_TRUE@@BUILD_CH3_TRUE@	src/mpid/ch3/channels/sock/src/ch3_progress.lo \
+ @BUILD_CH3_SOCK_TRUE@@BUILD_CH3_TRUE@	src/mpid/ch3/channels/sock/src/ch3_win_fns.lo
+-@BUILD_PAMID_TRUE@am__objects_20 = src/mpid/pamid/src/coll/barrier/mpido_barrier.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/barrier/mpido_ibarrier.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/bcast/mpido_bcast.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/bcast/mpido_ibcast.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allreduce/mpido_allreduce.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allreduce/mpido_iallreduce.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgather/mpido_allgather.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgather/mpido_iallgather.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgatherv/mpido_allgatherv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/allgatherv/mpido_iallgatherv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatterv/mpido_scatterv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatterv/mpido_iscatterv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatter/mpido_scatter.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scatter/mpido_iscatter.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gather/mpido_gather.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gather/mpido_igather.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoall/mpido_alltoall.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoall/mpido_ialltoall.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoallv/mpido_alltoallv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoallv/mpido_ialltoallv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gatherv/mpido_gatherv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/gatherv/mpido_igatherv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/scan/mpido_scan.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/reduce/mpido_reduce.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/reduce/mpido_ireduce.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/alltoallw/mpido_ialltoallw.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/exscan/mpido_iexscan.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/ired_scat_block/mpido_ired_scat_block.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/ired_scat/mpido_ired_scat.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/coll/coll_utils.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/comm/mpid_comm.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/comm/mpid_selectcolls.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/comm/mpid_optcolls.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_abort.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_get_universe_size.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_getpname.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_mem.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/misc/mpid_unimpl.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpix/mpix.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_1s.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_accumulate.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_create.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_fence.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_free.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_get.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_lock.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_lock_all.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_pscw.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_put.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_shared_query.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_create_dynamic.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_allocate_shared.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_flush.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_allocate.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_sync.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_attach.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_detach.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_get_info.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_set_info.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_get_accumulate.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_reqops.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpidi_win_control.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_compare_and_swap.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/onesided/mpid_win_fetch_and_op.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pamix/pamix.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/persistent/mpid_recv_init.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/persistent/mpid_send_init.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/persistent/mpid_startall.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_cancel.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_issend.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_recv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpid_ssend.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_eager.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_rzv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_short.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_callback_util.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_control.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_done.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_recvmsg.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_rendezvous.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/pt2pt/mpidi_sendmsg.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpid_comm_spawn_multiple.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpid_comm_disconnect.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpid_port.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpidi_pg.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/dyntask/mpidi_port.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_buffer.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_bufmm.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_finalize.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_init.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_iprobe.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_probe.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_progress.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_recvq.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_request.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_time.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_vc.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_env.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_util.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_mutex.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_mrecv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_mprobe.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_imrecv.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_improbe.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpidi_nbc_sched.lo \
+-@BUILD_PAMID_TRUE@	src/mpid/pamid/src/mpid_recvq_mmap.lo
+ @BUILD_MPID_COMMON_DATATYPE_TRUE@am__objects_21 = src/mpid/common/datatype/dataloop/darray_support.lo \
+ @BUILD_MPID_COMMON_DATATYPE_TRUE@	src/mpid/common/datatype/dataloop/dataloop.lo \
+ @BUILD_MPID_COMMON_DATATYPE_TRUE@	src/mpid/common/datatype/dataloop/dataloop_create.lo \
+@@ -5586,7 +5106,7 @@ am__dist_noinst_DATA_DIST = maint/Versio
+ 	src/mpi/errhan/baseerrnames.txt
+ DATA = $(dist_noinst_DATA) $(nodist_pkgconfig_DATA) $(noinst_DATA) \
+ 	$(sysconf_DATA)
+-am__include_HEADERS_DIST = src/mpid/pamid/include/mpix.h
++am__include_HEADERS_DIST =
+ am__modinc_HEADERS_DIST = src/binding/f90/$(MPIMOD).$(MOD) \
+ 	src/binding/f90/$(MPISIZEOFMOD).$(MOD) \
+ 	src/binding/f90/$(MPICONSTMOD).$(MOD) \
+@@ -5661,8 +5181,6 @@ am__noinst_HEADERS_DIST = src/mpi/attr/a
+ 	src/mpid/ch3/channels/nemesis/netmod/tcp/tcp_queue.h \
+ 	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_impl.h \
+ 	src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_extended_interface.h \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/scifrw.h \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/scif_impl.h \
+ 	src/mpid/ch3/channels/nemesis/netmod/portals4/ptl_impl.h \
+ 	src/mpid/ch3/channels/nemesis/netmod/ib/ib_impl.h \
+ 	src/mpid/ch3/channels/nemesis/netmod/ib/ib_ibcom.h \
+@@ -5671,29 +5189,6 @@ am__noinst_HEADERS_DIST = src/mpi/attr/a
+ 	src/mpid/ch3/channels/sock/include/mpidi_ch3_pre.h \
+ 	src/mpid/ch3/channels/sock/include/mpidi_ch3_impl.h \
+ 	src/mpid/ch3/channels/sock/include/mpidi_ch3_post.h \
+-	src/mpid/pamid/include/mpidi_thread.h \
+-	src/mpid/pamid/include/mpidimpl.h \
+-	src/mpid/pamid/include/mpidi_mutex.h \
+-	src/mpid/pamid/include/mpidpost.h \
+-	src/mpid/pamid/include/mpidi_constants.h \
+-	src/mpid/pamid/include/mpidi_externs.h \
+-	src/mpid/pamid/include/mpidi_util.h \
+-	src/mpid/pamid/include/mpidi_hooks.h \
+-	src/mpid/pamid/include/mpidi_macros.h \
+-	src/mpid/pamid/include/mpidi_datatypes.h \
+-	src/mpid/pamid/include/mpidi_prototypes.h \
+-	src/mpid/pamid/include/pamix.h \
+-	src/mpid/pamid/include/mpidpre.h \
+-	src/mpid/pamid/include/mpidi_platform.h \
+-	src/mpid/pamid/src/mpid_request.h \
+-	src/mpid/pamid/src/mpid_progress.h \
+-	src/mpid/pamid/src/mpid_recvq.h \
+-	src/mpid/pamid/src/onesided/mpidi_onesided.h \
+-	src/mpid/pamid/src/pt2pt/mpid_send.h \
+-	src/mpid/pamid/src/pt2pt/mpidi_recv.h \
+-	src/mpid/pamid/src/pt2pt/mpidi_send.h \
+-	src/mpid/pamid/src/pt2pt/mpid_irecv.h \
+-	src/mpid/pamid/src/pt2pt/mpid_isend.h \
+ 	src/mpid/common/datatype/dataloop/dataloop.h \
+ 	src/mpid/common/datatype/dataloop/dataloop_parts.h \
+ 	src/mpid/common/datatype/dataloop/dataloop_create.h \
+@@ -6860,7 +6355,7 @@ all: $(BUILT_SOURCES)
+ .SUFFIXES: .man-phony .html-phony .man1-phony .html1-phony .txt .c .cpp .cxx .f .f90 .lo .o .obj
+ am--refresh: Makefile
+ 	@:
+-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/maint/Makefile.mk $(srcdir)/src/Makefile.mk $(top_srcdir)/src/mpi/Makefile.mk $(top_srcdir)/src/mpi/attr/Makefile.mk $(top_srcdir)/src/mpi/coll/Makefile.mk $(top_srcdir)/src/mpi/comm/Makefile.mk $(top_srcdir)/src/mpi/datatype/Makefile.mk $(top_srcdir)/src/mpi/debugger/Makefile.mk $(top_srcdir)/src/mpi/errhan/Makefile.mk $(top_srcdir)/src/mpi/group/Makefile.mk $(top_srcdir)/src/mpi/info/Makefile.mk $(top_srcdir)/src/mpi/init/Makefile.mk $(top_srcdir)/src/mpi/misc/Makefile.mk $(top_srcdir)/src/mpi/pt2pt/Makefile.mk $(top_srcdir)/src/mpi/rma/Makefile.mk $(top_srcdir)/src/mpi/spawn/Makefile.mk $(top_srcdir)/src/mpi/timer/Makefile.mk $(top_srcdir)/src/mpi/topo/Makefile.mk $(top_srcdir)/src/util/Makefile.mk $(top_srcdir)/src/util/dbg/Makefile.mk $(top_srcdir)/src/util/instrm/Makefile.mk $(top_srcdir)/src/util/logging/Makefile.mk $(top_srcdir)/src/util/logging/common/Makefile.mk $(top_srcdir)/src/util/logging/rlog/Makefile.mk $(top_srcdir)/src/util/mem/Makefile.mk $(top_srcdir)/src/util/msgs/Makefile.mk $(top_srcdir)/src/util/other/Makefile.mk $(top_srcdir)/src/util/cvar/Makefile.mk $(top_srcdir)/src/util/procmap/Makefile.mk $(top_srcdir)/src/util/thread/Makefile.mk $(top_srcdir)/src/util/wrappers/Makefile.mk $(top_srcdir)/src/binding/Makefile.mk $(top_srcdir)/src/binding/cxx/Makefile.mk $(top_srcdir)/src/binding/f77/Makefile.mk $(top_srcdir)/src/binding/f90/Makefile.mk $(top_srcdir)/src/env/Makefile.mk $(top_srcdir)/src/glue/Makefile.mk $(top_srcdir)/src/glue/romio/Makefile.mk $(top_srcdir)/src/include/Makefile.mk $(top_srcdir)/src/include/thread/Makefile.mk $(top_srcdir)/src/mpid/Makefile.mk $(top_srcdir)/src/mpid/ch3/Makefile.mk $(top_srcdir)/src/mpid/ch3/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/ftb/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/mx/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/tcp/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/none/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/newmad/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/scif/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/portals4/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/ib/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/monitor/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/replacements/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/src/Makefile.mk $(top_srcdir)/src/mpid/pamid/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/barrier/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/bcast/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/allreduce/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/allgather/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/allgatherv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/scatterv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/scatter/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/gather/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/alltoall/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/alltoallv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/gatherv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/scan/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/reduce/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/alltoallw/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/exscan/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/ired_scat_block/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/ired_scat/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/comm/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/misc/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/mpix/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/onesided/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/pamix/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/pt2pt/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/pt2pt/persistent/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/dyntask/Makefile.mk $(top_srcdir)/src/mpid/common/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/dataloop/Makefile.mk $(top_srcdir)/src/mpid/common/sched/Makefile.mk $(top_srcdir)/src/mpid/common/sock/Makefile.mk $(top_srcdir)/src/mpid/common/sock/poll/Makefile.mk $(top_srcdir)/src/mpid/common/thread/Makefile.mk $(top_srcdir)/src/mutex/Makefile.mk $(top_srcdir)/src/mpi_t/Makefile.mk $(top_srcdir)/src/nameserv/Makefile.mk $(top_srcdir)/src/nameserv/file/Makefile.mk $(top_srcdir)/src/nameserv/mpd/Makefile.mk $(top_srcdir)/src/nameserv/pmi/Makefile.mk $(top_srcdir)/src/packaging/Makefile.mk $(top_srcdir)/src/packaging/pkgconfig/Makefile.mk $(top_srcdir)/src/packaging/envmods/Makefile.mk $(top_srcdir)/src/pm/Makefile.mk $(top_srcdir)/src/pm/util/Makefile.mk $(top_srcdir)/src/pm/gforker/Makefile.mk $(top_srcdir)/src/pm/remshell/Makefile.mk $(top_srcdir)/src/pmi/Makefile.mk $(top_srcdir)/src/pmi/pmi2/Makefile.mk $(top_srcdir)/src/pmi/pmi2/poe/Makefile.mk $(top_srcdir)/src/pmi/pmi2/simple/Makefile.mk $(top_srcdir)/src/pmi/simple/Makefile.mk $(top_srcdir)/doc/Makefile.mk $(am__configure_deps)
++$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(srcdir)/maint/Makefile.mk $(srcdir)/src/Makefile.mk $(top_srcdir)/src/mpi/Makefile.mk $(top_srcdir)/src/mpi/attr/Makefile.mk $(top_srcdir)/src/mpi/coll/Makefile.mk $(top_srcdir)/src/mpi/comm/Makefile.mk $(top_srcdir)/src/mpi/datatype/Makefile.mk $(top_srcdir)/src/mpi/debugger/Makefile.mk $(top_srcdir)/src/mpi/errhan/Makefile.mk $(top_srcdir)/src/mpi/group/Makefile.mk $(top_srcdir)/src/mpi/info/Makefile.mk $(top_srcdir)/src/mpi/init/Makefile.mk $(top_srcdir)/src/mpi/misc/Makefile.mk $(top_srcdir)/src/mpi/pt2pt/Makefile.mk $(top_srcdir)/src/mpi/rma/Makefile.mk $(top_srcdir)/src/mpi/spawn/Makefile.mk $(top_srcdir)/src/mpi/timer/Makefile.mk $(top_srcdir)/src/mpi/topo/Makefile.mk $(top_srcdir)/src/util/Makefile.mk $(top_srcdir)/src/util/dbg/Makefile.mk $(top_srcdir)/src/util/instrm/Makefile.mk $(top_srcdir)/src/util/logging/Makefile.mk $(top_srcdir)/src/util/logging/common/Makefile.mk $(top_srcdir)/src/util/logging/rlog/Makefile.mk $(top_srcdir)/src/util/mem/Makefile.mk $(top_srcdir)/src/util/msgs/Makefile.mk $(top_srcdir)/src/util/other/Makefile.mk $(top_srcdir)/src/util/cvar/Makefile.mk $(top_srcdir)/src/util/procmap/Makefile.mk $(top_srcdir)/src/util/thread/Makefile.mk $(top_srcdir)/src/util/wrappers/Makefile.mk $(top_srcdir)/src/binding/Makefile.mk $(top_srcdir)/src/binding/cxx/Makefile.mk $(top_srcdir)/src/binding/f77/Makefile.mk $(top_srcdir)/src/binding/f90/Makefile.mk $(top_srcdir)/src/env/Makefile.mk $(top_srcdir)/src/glue/Makefile.mk $(top_srcdir)/src/glue/romio/Makefile.mk $(top_srcdir)/src/include/Makefile.mk $(top_srcdir)/src/include/thread/Makefile.mk $(top_srcdir)/src/mpid/Makefile.mk $(top_srcdir)/src/mpid/ch3/Makefile.mk $(top_srcdir)/src/mpid/ch3/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/ftb/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/mx/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/tcp/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/none/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/newmad/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/portals4/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/ib/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/monitor/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/replacements/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/src/Makefile.mk $(top_srcdir)/src/mpid/common/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/dataloop/Makefile.mk $(top_srcdir)/src/mpid/common/sched/Makefile.mk $(top_srcdir)/src/mpid/common/sock/Makefile.mk $(top_srcdir)/src/mpid/common/sock/poll/Makefile.mk $(top_srcdir)/src/mpid/common/thread/Makefile.mk $(top_srcdir)/src/mutex/Makefile.mk $(top_srcdir)/src/mpi_t/Makefile.mk $(top_srcdir)/src/nameserv/Makefile.mk $(top_srcdir)/src/nameserv/file/Makefile.mk $(top_srcdir)/src/nameserv/mpd/Makefile.mk $(top_srcdir)/src/nameserv/pmi/Makefile.mk $(top_srcdir)/src/packaging/Makefile.mk $(top_srcdir)/src/packaging/pkgconfig/Makefile.mk $(top_srcdir)/src/packaging/envmods/Makefile.mk $(top_srcdir)/src/pm/Makefile.mk $(top_srcdir)/src/pm/util/Makefile.mk $(top_srcdir)/src/pm/gforker/Makefile.mk $(top_srcdir)/src/pm/remshell/Makefile.mk $(top_srcdir)/src/pmi/Makefile.mk $(top_srcdir)/src/pmi/pmi2/Makefile.mk $(top_srcdir)/src/pmi/pmi2/poe/Makefile.mk $(top_srcdir)/src/pmi/pmi2/simple/Makefile.mk $(top_srcdir)/src/pmi/simple/Makefile.mk $(top_srcdir)/doc/Makefile.mk $(am__configure_deps)
+ 	@for dep in $?; do \
+ 	  case '$(am__configure_deps)' in \
+ 	    *$$dep*) \
+@@ -6883,7 +6378,7 @@ Makefile: $(srcdir)/Makefile.in $(top_bu
+ 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe)'; \
+ 	    cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe);; \
+ 	esac;
+-$(srcdir)/maint/Makefile.mk $(srcdir)/src/Makefile.mk $(top_srcdir)/src/mpi/Makefile.mk $(top_srcdir)/src/mpi/attr/Makefile.mk $(top_srcdir)/src/mpi/coll/Makefile.mk $(top_srcdir)/src/mpi/comm/Makefile.mk $(top_srcdir)/src/mpi/datatype/Makefile.mk $(top_srcdir)/src/mpi/debugger/Makefile.mk $(top_srcdir)/src/mpi/errhan/Makefile.mk $(top_srcdir)/src/mpi/group/Makefile.mk $(top_srcdir)/src/mpi/info/Makefile.mk $(top_srcdir)/src/mpi/init/Makefile.mk $(top_srcdir)/src/mpi/misc/Makefile.mk $(top_srcdir)/src/mpi/pt2pt/Makefile.mk $(top_srcdir)/src/mpi/rma/Makefile.mk $(top_srcdir)/src/mpi/spawn/Makefile.mk $(top_srcdir)/src/mpi/timer/Makefile.mk $(top_srcdir)/src/mpi/topo/Makefile.mk $(top_srcdir)/src/util/Makefile.mk $(top_srcdir)/src/util/dbg/Makefile.mk $(top_srcdir)/src/util/instrm/Makefile.mk $(top_srcdir)/src/util/logging/Makefile.mk $(top_srcdir)/src/util/logging/common/Makefile.mk $(top_srcdir)/src/util/logging/rlog/Makefile.mk $(top_srcdir)/src/util/mem/Makefile.mk $(top_srcdir)/src/util/msgs/Makefile.mk $(top_srcdir)/src/util/other/Makefile.mk $(top_srcdir)/src/util/cvar/Makefile.mk $(top_srcdir)/src/util/procmap/Makefile.mk $(top_srcdir)/src/util/thread/Makefile.mk $(top_srcdir)/src/util/wrappers/Makefile.mk $(top_srcdir)/src/binding/Makefile.mk $(top_srcdir)/src/binding/cxx/Makefile.mk $(top_srcdir)/src/binding/f77/Makefile.mk $(top_srcdir)/src/binding/f90/Makefile.mk $(top_srcdir)/src/env/Makefile.mk $(top_srcdir)/src/glue/Makefile.mk $(top_srcdir)/src/glue/romio/Makefile.mk $(top_srcdir)/src/include/Makefile.mk $(top_srcdir)/src/include/thread/Makefile.mk $(top_srcdir)/src/mpid/Makefile.mk $(top_srcdir)/src/mpid/ch3/Makefile.mk $(top_srcdir)/src/mpid/ch3/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/ftb/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/mx/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/tcp/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/none/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/newmad/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/scif/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/portals4/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/ib/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/monitor/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/replacements/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/src/Makefile.mk $(top_srcdir)/src/mpid/pamid/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/barrier/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/bcast/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/allreduce/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/allgather/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/allgatherv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/scatterv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/scatter/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/gather/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/alltoall/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/alltoallv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/gatherv/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/scan/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/reduce/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/alltoallw/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/exscan/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/ired_scat_block/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/coll/ired_scat/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/comm/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/misc/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/mpix/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/onesided/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/pamix/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/pt2pt/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/pt2pt/persistent/Makefile.mk $(top_srcdir)/src/mpid/pamid/src/dyntask/Makefile.mk $(top_srcdir)/src/mpid/common/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/dataloop/Makefile.mk $(top_srcdir)/src/mpid/common/sched/Makefile.mk $(top_srcdir)/src/mpid/common/sock/Makefile.mk $(top_srcdir)/src/mpid/common/sock/poll/Makefile.mk $(top_srcdir)/src/mpid/common/thread/Makefile.mk $(top_srcdir)/src/mutex/Makefile.mk $(top_srcdir)/src/mpi_t/Makefile.mk $(top_srcdir)/src/nameserv/Makefile.mk $(top_srcdir)/src/nameserv/file/Makefile.mk $(top_srcdir)/src/nameserv/mpd/Makefile.mk $(top_srcdir)/src/nameserv/pmi/Makefile.mk $(top_srcdir)/src/packaging/Makefile.mk $(top_srcdir)/src/packaging/pkgconfig/Makefile.mk $(top_srcdir)/src/packaging/envmods/Makefile.mk $(top_srcdir)/src/pm/Makefile.mk $(top_srcdir)/src/pm/util/Makefile.mk $(top_srcdir)/src/pm/gforker/Makefile.mk $(top_srcdir)/src/pm/remshell/Makefile.mk $(top_srcdir)/src/pmi/Makefile.mk $(top_srcdir)/src/pmi/pmi2/Makefile.mk $(top_srcdir)/src/pmi/pmi2/poe/Makefile.mk $(top_srcdir)/src/pmi/pmi2/simple/Makefile.mk $(top_srcdir)/src/pmi/simple/Makefile.mk $(top_srcdir)/doc/Makefile.mk:
++$(srcdir)/maint/Makefile.mk $(srcdir)/src/Makefile.mk $(top_srcdir)/src/mpi/Makefile.mk $(top_srcdir)/src/mpi/attr/Makefile.mk $(top_srcdir)/src/mpi/coll/Makefile.mk $(top_srcdir)/src/mpi/comm/Makefile.mk $(top_srcdir)/src/mpi/datatype/Makefile.mk $(top_srcdir)/src/mpi/debugger/Makefile.mk $(top_srcdir)/src/mpi/errhan/Makefile.mk $(top_srcdir)/src/mpi/group/Makefile.mk $(top_srcdir)/src/mpi/info/Makefile.mk $(top_srcdir)/src/mpi/init/Makefile.mk $(top_srcdir)/src/mpi/misc/Makefile.mk $(top_srcdir)/src/mpi/pt2pt/Makefile.mk $(top_srcdir)/src/mpi/rma/Makefile.mk $(top_srcdir)/src/mpi/spawn/Makefile.mk $(top_srcdir)/src/mpi/timer/Makefile.mk $(top_srcdir)/src/mpi/topo/Makefile.mk $(top_srcdir)/src/util/Makefile.mk $(top_srcdir)/src/util/dbg/Makefile.mk $(top_srcdir)/src/util/instrm/Makefile.mk $(top_srcdir)/src/util/logging/Makefile.mk $(top_srcdir)/src/util/logging/common/Makefile.mk $(top_srcdir)/src/util/logging/rlog/Makefile.mk $(top_srcdir)/src/util/mem/Makefile.mk $(top_srcdir)/src/util/msgs/Makefile.mk $(top_srcdir)/src/util/other/Makefile.mk $(top_srcdir)/src/util/cvar/Makefile.mk $(top_srcdir)/src/util/procmap/Makefile.mk $(top_srcdir)/src/util/thread/Makefile.mk $(top_srcdir)/src/util/wrappers/Makefile.mk $(top_srcdir)/src/binding/Makefile.mk $(top_srcdir)/src/binding/cxx/Makefile.mk $(top_srcdir)/src/binding/f77/Makefile.mk $(top_srcdir)/src/binding/f90/Makefile.mk $(top_srcdir)/src/env/Makefile.mk $(top_srcdir)/src/glue/Makefile.mk $(top_srcdir)/src/glue/romio/Makefile.mk $(top_srcdir)/src/include/Makefile.mk $(top_srcdir)/src/include/thread/Makefile.mk $(top_srcdir)/src/mpid/Makefile.mk $(top_srcdir)/src/mpid/ch3/Makefile.mk $(top_srcdir)/src/mpid/ch3/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/util/ftb/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/src/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/mx/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/tcp/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/none/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/newmad/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/portals4/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/netmod/ib/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/monitor/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/nemesis/utils/replacements/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/Makefile.mk $(top_srcdir)/src/mpid/ch3/channels/sock/src/Makefile.mk $(top_srcdir)/src/mpid/common/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/Makefile.mk $(top_srcdir)/src/mpid/common/datatype/dataloop/Makefile.mk $(top_srcdir)/src/mpid/common/sched/Makefile.mk $(top_srcdir)/src/mpid/common/sock/Makefile.mk $(top_srcdir)/src/mpid/common/sock/poll/Makefile.mk $(top_srcdir)/src/mpid/common/thread/Makefile.mk $(top_srcdir)/src/mutex/Makefile.mk $(top_srcdir)/src/mpi_t/Makefile.mk $(top_srcdir)/src/nameserv/Makefile.mk $(top_srcdir)/src/nameserv/file/Makefile.mk $(top_srcdir)/src/nameserv/mpd/Makefile.mk $(top_srcdir)/src/nameserv/pmi/Makefile.mk $(top_srcdir)/src/packaging/Makefile.mk $(top_srcdir)/src/packaging/pkgconfig/Makefile.mk $(top_srcdir)/src/packaging/envmods/Makefile.mk $(top_srcdir)/src/pm/Makefile.mk $(top_srcdir)/src/pm/util/Makefile.mk $(top_srcdir)/src/pm/gforker/Makefile.mk $(top_srcdir)/src/pm/remshell/Makefile.mk $(top_srcdir)/src/pmi/Makefile.mk $(top_srcdir)/src/pmi/pmi2/Makefile.mk $(top_srcdir)/src/pmi/pmi2/poe/Makefile.mk $(top_srcdir)/src/pmi/pmi2/simple/Makefile.mk $(top_srcdir)/src/pmi/simple/Makefile.mk $(top_srcdir)/doc/Makefile.mk:
+ 
+ $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
+ 	$(SHELL) ./config.status --recheck
+@@ -9583,27 +9078,6 @@ src/mpid/ch3/channels/nemesis/netmod/new
+ src/mpid/ch3/channels/nemesis/netmod/newmad/newmad_alloc.lo:  \
+ 	src/mpid/ch3/channels/nemesis/netmod/newmad/$(am__dirstamp) \
+ 	src/mpid/ch3/channels/nemesis/netmod/newmad/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/ch3/channels/nemesis/netmod/scif
+-	@: > src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp)
+-src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)
+-	@: > src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/ch3/channels/nemesis/netmod/scif/scif_finalize.lo:  \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp) \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/ch3/channels/nemesis/netmod/scif/scif_init.lo:  \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp) \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/ch3/channels/nemesis/netmod/scif/scif_send.lo:  \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp) \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/ch3/channels/nemesis/netmod/scif/scifrw.lo:  \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp) \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/ch3/channels/nemesis/netmod/scif/scifsm.lo:  \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp) \
+-	src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp)
+ src/mpid/ch3/channels/nemesis/netmod/portals4/$(am__dirstamp):
+ 	@$(MKDIR_P) src/mpid/ch3/channels/nemesis/netmod/portals4
+ 	@: > src/mpid/ch3/channels/nemesis/netmod/portals4/$(am__dirstamp)
+@@ -9705,472 +9179,6 @@ src/mpid/ch3/channels/sock/src/ch3_progr
+ src/mpid/ch3/channels/sock/src/ch3_win_fns.lo:  \
+ 	src/mpid/ch3/channels/sock/src/$(am__dirstamp) \
+ 	src/mpid/ch3/channels/sock/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/barrier/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/barrier
+-	@: > src/mpid/pamid/src/coll/barrier/$(am__dirstamp)
+-src/mpid/pamid/src/coll/barrier/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/barrier/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/barrier/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/barrier/mpido_barrier.lo:  \
+-	src/mpid/pamid/src/coll/barrier/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/barrier/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/barrier/mpido_ibarrier.lo:  \
+-	src/mpid/pamid/src/coll/barrier/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/barrier/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/bcast/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/bcast
+-	@: > src/mpid/pamid/src/coll/bcast/$(am__dirstamp)
+-src/mpid/pamid/src/coll/bcast/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/bcast/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/bcast/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/bcast/mpido_bcast.lo:  \
+-	src/mpid/pamid/src/coll/bcast/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/bcast/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/bcast/mpido_ibcast.lo:  \
+-	src/mpid/pamid/src/coll/bcast/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/bcast/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allreduce/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/allreduce
+-	@: > src/mpid/pamid/src/coll/allreduce/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allreduce/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/allreduce/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/allreduce/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allreduce/mpido_allreduce.lo:  \
+-	src/mpid/pamid/src/coll/allreduce/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/allreduce/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allreduce/mpido_iallreduce.lo:  \
+-	src/mpid/pamid/src/coll/allreduce/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/allreduce/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgather/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/allgather
+-	@: > src/mpid/pamid/src/coll/allgather/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgather/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/allgather/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/allgather/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgather/mpido_allgather.lo:  \
+-	src/mpid/pamid/src/coll/allgather/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/allgather/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgather/mpido_iallgather.lo:  \
+-	src/mpid/pamid/src/coll/allgather/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/allgather/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgatherv/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/allgatherv
+-	@: > src/mpid/pamid/src/coll/allgatherv/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgatherv/mpido_allgatherv.lo:  \
+-	src/mpid/pamid/src/coll/allgatherv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/allgatherv/mpido_iallgatherv.lo:  \
+-	src/mpid/pamid/src/coll/allgatherv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatterv/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/scatterv
+-	@: > src/mpid/pamid/src/coll/scatterv/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatterv/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/scatterv/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/scatterv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatterv/mpido_scatterv.lo:  \
+-	src/mpid/pamid/src/coll/scatterv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/scatterv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatterv/mpido_iscatterv.lo:  \
+-	src/mpid/pamid/src/coll/scatterv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/scatterv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatter/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/scatter
+-	@: > src/mpid/pamid/src/coll/scatter/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatter/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/scatter/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/scatter/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatter/mpido_scatter.lo:  \
+-	src/mpid/pamid/src/coll/scatter/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/scatter/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scatter/mpido_iscatter.lo:  \
+-	src/mpid/pamid/src/coll/scatter/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/scatter/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gather/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/gather
+-	@: > src/mpid/pamid/src/coll/gather/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gather/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/gather/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/gather/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gather/mpido_gather.lo:  \
+-	src/mpid/pamid/src/coll/gather/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/gather/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gather/mpido_igather.lo:  \
+-	src/mpid/pamid/src/coll/gather/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/gather/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoall/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/alltoall
+-	@: > src/mpid/pamid/src/coll/alltoall/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoall/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/alltoall/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/alltoall/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoall/mpido_alltoall.lo:  \
+-	src/mpid/pamid/src/coll/alltoall/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/alltoall/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoall/mpido_ialltoall.lo:  \
+-	src/mpid/pamid/src/coll/alltoall/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/alltoall/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoallv/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/alltoallv
+-	@: > src/mpid/pamid/src/coll/alltoallv/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoallv/mpido_alltoallv.lo:  \
+-	src/mpid/pamid/src/coll/alltoallv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoallv/mpido_ialltoallv.lo:  \
+-	src/mpid/pamid/src/coll/alltoallv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gatherv/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/gatherv
+-	@: > src/mpid/pamid/src/coll/gatherv/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gatherv/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/gatherv/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/gatherv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gatherv/mpido_gatherv.lo:  \
+-	src/mpid/pamid/src/coll/gatherv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/gatherv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/gatherv/mpido_igatherv.lo:  \
+-	src/mpid/pamid/src/coll/gatherv/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/gatherv/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scan/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/scan
+-	@: > src/mpid/pamid/src/coll/scan/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scan/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/scan/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/scan/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/scan/mpido_scan.lo:  \
+-	src/mpid/pamid/src/coll/scan/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/scan/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/reduce/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/reduce
+-	@: > src/mpid/pamid/src/coll/reduce/$(am__dirstamp)
+-src/mpid/pamid/src/coll/reduce/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/reduce/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/reduce/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/reduce/mpido_reduce.lo:  \
+-	src/mpid/pamid/src/coll/reduce/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/reduce/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/reduce/mpido_ireduce.lo:  \
+-	src/mpid/pamid/src/coll/reduce/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/reduce/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoallw/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/alltoallw
+-	@: > src/mpid/pamid/src/coll/alltoallw/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoallw/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/alltoallw/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/alltoallw/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/alltoallw/mpido_ialltoallw.lo:  \
+-	src/mpid/pamid/src/coll/alltoallw/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/alltoallw/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/exscan/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/exscan
+-	@: > src/mpid/pamid/src/coll/exscan/$(am__dirstamp)
+-src/mpid/pamid/src/coll/exscan/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/exscan/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/exscan/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/exscan/mpido_iexscan.lo:  \
+-	src/mpid/pamid/src/coll/exscan/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/exscan/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/ired_scat_block/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/ired_scat_block
+-	@: > src/mpid/pamid/src/coll/ired_scat_block/$(am__dirstamp)
+-src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/ired_scat_block/mpido_ired_scat_block.lo:  \
+-	src/mpid/pamid/src/coll/ired_scat_block/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/ired_scat/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/ired_scat
+-	@: > src/mpid/pamid/src/coll/ired_scat/$(am__dirstamp)
+-src/mpid/pamid/src/coll/ired_scat/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/ired_scat/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/ired_scat/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/ired_scat/mpido_ired_scat.lo:  \
+-	src/mpid/pamid/src/coll/ired_scat/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/ired_scat/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll
+-	@: > src/mpid/pamid/src/coll/$(am__dirstamp)
+-src/mpid/pamid/src/coll/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/coll/$(DEPDIR)
+-	@: > src/mpid/pamid/src/coll/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/coll/coll_utils.lo:  \
+-	src/mpid/pamid/src/coll/$(am__dirstamp) \
+-	src/mpid/pamid/src/coll/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/comm/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/comm
+-	@: > src/mpid/pamid/src/comm/$(am__dirstamp)
+-src/mpid/pamid/src/comm/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/comm/$(DEPDIR)
+-	@: > src/mpid/pamid/src/comm/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/comm/mpid_comm.lo:  \
+-	src/mpid/pamid/src/comm/$(am__dirstamp) \
+-	src/mpid/pamid/src/comm/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/comm/mpid_selectcolls.lo:  \
+-	src/mpid/pamid/src/comm/$(am__dirstamp) \
+-	src/mpid/pamid/src/comm/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/comm/mpid_optcolls.lo:  \
+-	src/mpid/pamid/src/comm/$(am__dirstamp) \
+-	src/mpid/pamid/src/comm/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/misc/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/misc
+-	@: > src/mpid/pamid/src/misc/$(am__dirstamp)
+-src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/misc/$(DEPDIR)
+-	@: > src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/misc/mpid_abort.lo:  \
+-	src/mpid/pamid/src/misc/$(am__dirstamp) \
+-	src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/misc/mpid_get_universe_size.lo:  \
+-	src/mpid/pamid/src/misc/$(am__dirstamp) \
+-	src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/misc/mpid_getpname.lo:  \
+-	src/mpid/pamid/src/misc/$(am__dirstamp) \
+-	src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/misc/mpid_mem.lo:  \
+-	src/mpid/pamid/src/misc/$(am__dirstamp) \
+-	src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/misc/mpid_unimpl.lo:  \
+-	src/mpid/pamid/src/misc/$(am__dirstamp) \
+-	src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpix/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/mpix
+-	@: > src/mpid/pamid/src/mpix/$(am__dirstamp)
+-src/mpid/pamid/src/mpix/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/mpix/$(DEPDIR)
+-	@: > src/mpid/pamid/src/mpix/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpix/mpix.lo:  \
+-	src/mpid/pamid/src/mpix/$(am__dirstamp) \
+-	src/mpid/pamid/src/mpix/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/onesided
+-	@: > src/mpid/pamid/src/onesided/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/onesided/$(DEPDIR)
+-	@: > src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_1s.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_accumulate.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_create.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_fence.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_free.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_get.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_lock.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_lock_all.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_pscw.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_put.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_shared_query.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_create_dynamic.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_allocate_shared.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_flush.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_allocate.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_sync.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_attach.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_detach.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_get_info.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_set_info.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_get_accumulate.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_reqops.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpidi_win_control.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_compare_and_swap.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/onesided/mpid_win_fetch_and_op.lo:  \
+-	src/mpid/pamid/src/onesided/$(am__dirstamp) \
+-	src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pamix/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/pamix
+-	@: > src/mpid/pamid/src/pamix/$(am__dirstamp)
+-src/mpid/pamid/src/pamix/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/pamix/$(DEPDIR)
+-	@: > src/mpid/pamid/src/pamix/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pamix/pamix.lo:  \
+-	src/mpid/pamid/src/pamix/$(am__dirstamp) \
+-	src/mpid/pamid/src/pamix/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/persistent/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/pt2pt/persistent
+-	@: > src/mpid/pamid/src/pt2pt/persistent/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)
+-	@: > src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/persistent/mpid_recv_init.lo:  \
+-	src/mpid/pamid/src/pt2pt/persistent/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/persistent/mpid_send_init.lo:  \
+-	src/mpid/pamid/src/pt2pt/persistent/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/persistent/mpid_startall.lo:  \
+-	src/mpid/pamid/src/pt2pt/persistent/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/pt2pt
+-	@: > src/mpid/pamid/src/pt2pt/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/pt2pt/$(DEPDIR)
+-	@: > src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpid_cancel.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpid_issend.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpid_recv.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpid_ssend.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_callback_eager.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_callback_rzv.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_callback_short.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_callback_util.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_control.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_done.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_recvmsg.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_rendezvous.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/pt2pt/mpidi_sendmsg.lo:  \
+-	src/mpid/pamid/src/pt2pt/$(am__dirstamp) \
+-	src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/dyntask/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/dyntask
+-	@: > src/mpid/pamid/src/dyntask/$(am__dirstamp)
+-src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/dyntask/$(DEPDIR)
+-	@: > src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/dyntask/mpid_comm_spawn_multiple.lo:  \
+-	src/mpid/pamid/src/dyntask/$(am__dirstamp) \
+-	src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/dyntask/mpid_comm_disconnect.lo:  \
+-	src/mpid/pamid/src/dyntask/$(am__dirstamp) \
+-	src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/dyntask/mpid_port.lo:  \
+-	src/mpid/pamid/src/dyntask/$(am__dirstamp) \
+-	src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/dyntask/mpidi_pg.lo:  \
+-	src/mpid/pamid/src/dyntask/$(am__dirstamp) \
+-	src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/dyntask/mpidi_port.lo:  \
+-	src/mpid/pamid/src/dyntask/$(am__dirstamp) \
+-	src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src
+-	@: > src/mpid/pamid/src/$(am__dirstamp)
+-src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp):
+-	@$(MKDIR_P) src/mpid/pamid/src/$(DEPDIR)
+-	@: > src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_buffer.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpidi_bufmm.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_finalize.lo:  \
+-	src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_init.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_iprobe.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_probe.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_progress.lo:  \
+-	src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_recvq.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_request.lo:  \
+-	src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_time.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_vc.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpidi_env.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpidi_util.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpidi_mutex.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_mrecv.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_mprobe.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_imrecv.lo: src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_improbe.lo:  \
+-	src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpidi_nbc_sched.lo:  \
+-	src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-src/mpid/pamid/src/mpid_recvq_mmap.lo:  \
+-	src/mpid/pamid/src/$(am__dirstamp) \
+-	src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+ src/mpid/common/datatype/dataloop/$(am__dirstamp):
+ 	@$(MKDIR_P) src/mpid/common/datatype/dataloop
+ 	@: > src/mpid/common/datatype/dataloop/$(am__dirstamp)
+@@ -13484,8 +12492,6 @@ mostlyclean-compile:
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/none/*.lo
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/portals4/*.$(OBJEXT)
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/portals4/*.lo
+-	-rm -f src/mpid/ch3/channels/nemesis/netmod/scif/*.$(OBJEXT)
+-	-rm -f src/mpid/ch3/channels/nemesis/netmod/scif/*.lo
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/tcp/*.$(OBJEXT)
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/tcp/*.lo
+ 	-rm -f src/mpid/ch3/channels/nemesis/src/*.$(OBJEXT)
+@@ -13512,60 +12518,6 @@ mostlyclean-compile:
+ 	-rm -f src/mpid/common/sock/poll/*.lo
+ 	-rm -f src/mpid/common/thread/*.$(OBJEXT)
+ 	-rm -f src/mpid/common/thread/*.lo
+-	-rm -f src/mpid/pamid/src/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/*.lo
+-	-rm -f src/mpid/pamid/src/coll/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/*.lo
+-	-rm -f src/mpid/pamid/src/coll/allgather/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/allgather/*.lo
+-	-rm -f src/mpid/pamid/src/coll/allgatherv/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/allgatherv/*.lo
+-	-rm -f src/mpid/pamid/src/coll/allreduce/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/allreduce/*.lo
+-	-rm -f src/mpid/pamid/src/coll/alltoall/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/alltoall/*.lo
+-	-rm -f src/mpid/pamid/src/coll/alltoallv/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/alltoallv/*.lo
+-	-rm -f src/mpid/pamid/src/coll/alltoallw/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/alltoallw/*.lo
+-	-rm -f src/mpid/pamid/src/coll/barrier/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/barrier/*.lo
+-	-rm -f src/mpid/pamid/src/coll/bcast/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/bcast/*.lo
+-	-rm -f src/mpid/pamid/src/coll/exscan/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/exscan/*.lo
+-	-rm -f src/mpid/pamid/src/coll/gather/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/gather/*.lo
+-	-rm -f src/mpid/pamid/src/coll/gatherv/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/gatherv/*.lo
+-	-rm -f src/mpid/pamid/src/coll/ired_scat/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/ired_scat/*.lo
+-	-rm -f src/mpid/pamid/src/coll/ired_scat_block/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/ired_scat_block/*.lo
+-	-rm -f src/mpid/pamid/src/coll/reduce/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/reduce/*.lo
+-	-rm -f src/mpid/pamid/src/coll/scan/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/scan/*.lo
+-	-rm -f src/mpid/pamid/src/coll/scatter/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/scatter/*.lo
+-	-rm -f src/mpid/pamid/src/coll/scatterv/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/coll/scatterv/*.lo
+-	-rm -f src/mpid/pamid/src/comm/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/comm/*.lo
+-	-rm -f src/mpid/pamid/src/dyntask/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/dyntask/*.lo
+-	-rm -f src/mpid/pamid/src/misc/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/misc/*.lo
+-	-rm -f src/mpid/pamid/src/mpix/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/mpix/*.lo
+-	-rm -f src/mpid/pamid/src/onesided/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/onesided/*.lo
+-	-rm -f src/mpid/pamid/src/pamix/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/pamix/*.lo
+-	-rm -f src/mpid/pamid/src/pt2pt/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/pt2pt/*.lo
+-	-rm -f src/mpid/pamid/src/pt2pt/persistent/*.$(OBJEXT)
+-	-rm -f src/mpid/pamid/src/pt2pt/persistent/*.lo
+ 	-rm -f src/mutex/*.$(OBJEXT)
+ 	-rm -f src/mutex/*.lo
+ 	-rm -f src/nameserv/file/*.$(OBJEXT)
+@@ -15476,11 +14428,6 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR)/ptl_probe.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR)/ptl_recv.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR)/ptl_send.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/scif_finalize.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/scif_init.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/scif_send.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/scifrw.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/scifsm.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR)/socksm.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR)/tcp_ckpt.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR)/tcp_finalize.Plo@am__quote@
+@@ -15615,112 +14562,6 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/common/sched/$(DEPDIR)/mpid_sched.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/common/sock/poll/$(DEPDIR)/sock.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mpid/common/thread/$(DEPDIR)/mpid_thread.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_buffer.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_finalize.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_improbe.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_imrecv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_init.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_iprobe.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_mprobe.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_mrecv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_probe.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_progress.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_recvq.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_recvq_mmap.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_request.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_time.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpid_vc.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpidi_bufmm.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpidi_env.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpidi_mutex.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpidi_nbc_sched.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/$(DEPDIR)/mpidi_util.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/$(DEPDIR)/coll_utils.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/allgather/$(DEPDIR)/mpido_allgather.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/allgather/$(DEPDIR)/mpido_iallgather.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)/mpido_allgatherv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)/mpido_iallgatherv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/allreduce/$(DEPDIR)/mpido_allreduce.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/allreduce/$(DEPDIR)/mpido_iallreduce.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/alltoall/$(DEPDIR)/mpido_alltoall.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/alltoall/$(DEPDIR)/mpido_ialltoall.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)/mpido_alltoallv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)/mpido_ialltoallv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/alltoallw/$(DEPDIR)/mpido_ialltoallw.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/barrier/$(DEPDIR)/mpido_barrier.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/barrier/$(DEPDIR)/mpido_ibarrier.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/bcast/$(DEPDIR)/mpido_bcast.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/bcast/$(DEPDIR)/mpido_ibcast.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/exscan/$(DEPDIR)/mpido_iexscan.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/gather/$(DEPDIR)/mpido_gather.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/gather/$(DEPDIR)/mpido_igather.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/gatherv/$(DEPDIR)/mpido_gatherv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/gatherv/$(DEPDIR)/mpido_igatherv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/ired_scat/$(DEPDIR)/mpido_ired_scat.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR)/mpido_ired_scat_block.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/reduce/$(DEPDIR)/mpido_ireduce.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/reduce/$(DEPDIR)/mpido_reduce.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/scan/$(DEPDIR)/mpido_scan.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/scatter/$(DEPDIR)/mpido_iscatter.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/scatter/$(DEPDIR)/mpido_scatter.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/scatterv/$(DEPDIR)/mpido_iscatterv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/coll/scatterv/$(DEPDIR)/mpido_scatterv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/comm/$(DEPDIR)/mpid_comm.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/comm/$(DEPDIR)/mpid_optcolls.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/comm/$(DEPDIR)/mpid_selectcolls.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/dyntask/$(DEPDIR)/mpid_comm_disconnect.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/dyntask/$(DEPDIR)/mpid_comm_spawn_multiple.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/dyntask/$(DEPDIR)/mpid_port.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/dyntask/$(DEPDIR)/mpidi_pg.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/dyntask/$(DEPDIR)/mpidi_port.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/misc/$(DEPDIR)/mpid_abort.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/misc/$(DEPDIR)/mpid_get_universe_size.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/misc/$(DEPDIR)/mpid_getpname.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/misc/$(DEPDIR)/mpid_mem.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/misc/$(DEPDIR)/mpid_unimpl.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/mpix/$(DEPDIR)/mpix.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_1s.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_accumulate.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_allocate.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_allocate_shared.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_attach.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_compare_and_swap.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_create.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_create_dynamic.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_detach.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_fence.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_fetch_and_op.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_flush.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_free.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_get.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_get_accumulate.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_get_info.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_lock.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_lock_all.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_pscw.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_put.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_reqops.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_set_info.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_shared_query.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpid_win_sync.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/onesided/$(DEPDIR)/mpidi_win_control.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pamix/$(DEPDIR)/pamix.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpid_cancel.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpid_issend.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpid_recv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpid_ssend.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_callback_eager.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_callback_rzv.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_callback_short.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_callback_util.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_control.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_done.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_recvmsg.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_rendezvous.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/$(DEPDIR)/mpidi_sendmsg.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/mpid_recv_init.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/mpid_send_init.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/mpid_startall.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mutex/$(DEPDIR)/lib_lib@PMPILIBNAME@_la-mutex_create.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mutex/$(DEPDIR)/lib_lib@PMPILIBNAME@_la-mutex_free.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@src/mutex/$(DEPDIR)/lib_lib@PMPILIBNAME@_la-mutex_lock.Plo@am__quote@
+@@ -23768,7 +22609,6 @@ clean-libtool:
+ 	-rm -rf src/mpid/ch3/channels/nemesis/netmod/newmad/.libs src/mpid/ch3/channels/nemesis/netmod/newmad/_libs
+ 	-rm -rf src/mpid/ch3/channels/nemesis/netmod/none/.libs src/mpid/ch3/channels/nemesis/netmod/none/_libs
+ 	-rm -rf src/mpid/ch3/channels/nemesis/netmod/portals4/.libs src/mpid/ch3/channels/nemesis/netmod/portals4/_libs
+-	-rm -rf src/mpid/ch3/channels/nemesis/netmod/scif/.libs src/mpid/ch3/channels/nemesis/netmod/scif/_libs
+ 	-rm -rf src/mpid/ch3/channels/nemesis/netmod/tcp/.libs src/mpid/ch3/channels/nemesis/netmod/tcp/_libs
+ 	-rm -rf src/mpid/ch3/channels/nemesis/src/.libs src/mpid/ch3/channels/nemesis/src/_libs
+ 	-rm -rf src/mpid/ch3/channels/nemesis/utils/monitor/.libs src/mpid/ch3/channels/nemesis/utils/monitor/_libs
+@@ -23782,33 +22622,6 @@ clean-libtool:
+ 	-rm -rf src/mpid/common/sched/.libs src/mpid/common/sched/_libs
+ 	-rm -rf src/mpid/common/sock/poll/.libs src/mpid/common/sock/poll/_libs
+ 	-rm -rf src/mpid/common/thread/.libs src/mpid/common/thread/_libs
+-	-rm -rf src/mpid/pamid/src/.libs src/mpid/pamid/src/_libs
+-	-rm -rf src/mpid/pamid/src/coll/.libs src/mpid/pamid/src/coll/_libs
+-	-rm -rf src/mpid/pamid/src/coll/allgather/.libs src/mpid/pamid/src/coll/allgather/_libs
+-	-rm -rf src/mpid/pamid/src/coll/allgatherv/.libs src/mpid/pamid/src/coll/allgatherv/_libs
+-	-rm -rf src/mpid/pamid/src/coll/allreduce/.libs src/mpid/pamid/src/coll/allreduce/_libs
+-	-rm -rf src/mpid/pamid/src/coll/alltoall/.libs src/mpid/pamid/src/coll/alltoall/_libs
+-	-rm -rf src/mpid/pamid/src/coll/alltoallv/.libs src/mpid/pamid/src/coll/alltoallv/_libs
+-	-rm -rf src/mpid/pamid/src/coll/alltoallw/.libs src/mpid/pamid/src/coll/alltoallw/_libs
+-	-rm -rf src/mpid/pamid/src/coll/barrier/.libs src/mpid/pamid/src/coll/barrier/_libs
+-	-rm -rf src/mpid/pamid/src/coll/bcast/.libs src/mpid/pamid/src/coll/bcast/_libs
+-	-rm -rf src/mpid/pamid/src/coll/exscan/.libs src/mpid/pamid/src/coll/exscan/_libs
+-	-rm -rf src/mpid/pamid/src/coll/gather/.libs src/mpid/pamid/src/coll/gather/_libs
+-	-rm -rf src/mpid/pamid/src/coll/gatherv/.libs src/mpid/pamid/src/coll/gatherv/_libs
+-	-rm -rf src/mpid/pamid/src/coll/ired_scat/.libs src/mpid/pamid/src/coll/ired_scat/_libs
+-	-rm -rf src/mpid/pamid/src/coll/ired_scat_block/.libs src/mpid/pamid/src/coll/ired_scat_block/_libs
+-	-rm -rf src/mpid/pamid/src/coll/reduce/.libs src/mpid/pamid/src/coll/reduce/_libs
+-	-rm -rf src/mpid/pamid/src/coll/scan/.libs src/mpid/pamid/src/coll/scan/_libs
+-	-rm -rf src/mpid/pamid/src/coll/scatter/.libs src/mpid/pamid/src/coll/scatter/_libs
+-	-rm -rf src/mpid/pamid/src/coll/scatterv/.libs src/mpid/pamid/src/coll/scatterv/_libs
+-	-rm -rf src/mpid/pamid/src/comm/.libs src/mpid/pamid/src/comm/_libs
+-	-rm -rf src/mpid/pamid/src/dyntask/.libs src/mpid/pamid/src/dyntask/_libs
+-	-rm -rf src/mpid/pamid/src/misc/.libs src/mpid/pamid/src/misc/_libs
+-	-rm -rf src/mpid/pamid/src/mpix/.libs src/mpid/pamid/src/mpix/_libs
+-	-rm -rf src/mpid/pamid/src/onesided/.libs src/mpid/pamid/src/onesided/_libs
+-	-rm -rf src/mpid/pamid/src/pamix/.libs src/mpid/pamid/src/pamix/_libs
+-	-rm -rf src/mpid/pamid/src/pt2pt/.libs src/mpid/pamid/src/pt2pt/_libs
+-	-rm -rf src/mpid/pamid/src/pt2pt/persistent/.libs src/mpid/pamid/src/pt2pt/persistent/_libs
+ 	-rm -rf src/mutex/.libs src/mutex/_libs
+ 	-rm -rf src/nameserv/file/.libs src/nameserv/file/_libs
+ 	-rm -rf src/nameserv/mpd/.libs src/nameserv/mpd/_libs
+@@ -24322,8 +23135,6 @@ distclean-generic:
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/none/$(am__dirstamp)
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR)/$(am__dirstamp)
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/portals4/$(am__dirstamp)
+-	-rm -f src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/ch3/channels/nemesis/netmod/scif/$(am__dirstamp)
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR)/$(am__dirstamp)
+ 	-rm -f src/mpid/ch3/channels/nemesis/netmod/tcp/$(am__dirstamp)
+ 	-rm -f src/mpid/ch3/channels/nemesis/src/$(DEPDIR)/$(am__dirstamp)
+@@ -24350,60 +23161,6 @@ distclean-generic:
+ 	-rm -f src/mpid/common/sock/poll/$(am__dirstamp)
+ 	-rm -f src/mpid/common/thread/$(DEPDIR)/$(am__dirstamp)
+ 	-rm -f src/mpid/common/thread/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/allgather/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/allgather/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/allgatherv/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/allgatherv/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/allreduce/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/allreduce/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/alltoall/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/alltoall/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/alltoallv/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/alltoallv/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/alltoallw/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/alltoallw/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/barrier/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/barrier/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/bcast/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/bcast/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/exscan/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/exscan/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/gather/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/gather/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/gatherv/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/gatherv/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/ired_scat/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/ired_scat/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/ired_scat_block/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/reduce/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/reduce/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/scan/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/scan/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/scatter/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/scatter/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/scatterv/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/coll/scatterv/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/comm/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/comm/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/dyntask/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/dyntask/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/misc/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/misc/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/mpix/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/mpix/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/onesided/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/onesided/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/pamix/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/pamix/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/pt2pt/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/pt2pt/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR)/$(am__dirstamp)
+-	-rm -f src/mpid/pamid/src/pt2pt/persistent/$(am__dirstamp)
+ 	-rm -f src/mutex/$(DEPDIR)/$(am__dirstamp)
+ 	-rm -f src/mutex/$(am__dirstamp)
+ 	-rm -f src/nameserv/file/$(DEPDIR)/$(am__dirstamp)
+@@ -24457,7 +23214,7 @@ clean-am: clean-binPROGRAMS clean-generi
+ 
+ distclean: distclean-recursive
+ 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
+-	-rm -rf src/binding/cxx/$(DEPDIR) src/binding/f77/$(DEPDIR) src/binding/f90/$(DEPDIR) src/env/$(DEPDIR) src/glue/romio/$(DEPDIR) src/mpi/attr/$(DEPDIR) src/mpi/coll/$(DEPDIR) src/mpi/comm/$(DEPDIR) src/mpi/datatype/$(DEPDIR) src/mpi/debugger/$(DEPDIR) src/mpi/errhan/$(DEPDIR) src/mpi/group/$(DEPDIR) src/mpi/info/$(DEPDIR) src/mpi/init/$(DEPDIR) src/mpi/misc/$(DEPDIR) src/mpi/pt2pt/$(DEPDIR) src/mpi/rma/$(DEPDIR) src/mpi/spawn/$(DEPDIR) src/mpi/timer/$(DEPDIR) src/mpi/topo/$(DEPDIR) src/mpi_t/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/ib/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/mx/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/newmad/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/none/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR) src/mpid/ch3/channels/nemesis/src/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/monitor/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/replacements/$(DEPDIR) src/mpid/ch3/channels/sock/src/$(DEPDIR) src/mpid/ch3/src/$(DEPDIR) src/mpid/ch3/util/ftb/$(DEPDIR) src/mpid/ch3/util/sock/$(DEPDIR) src/mpid/common/datatype/$(DEPDIR) src/mpid/common/datatype/dataloop/$(DEPDIR) src/mpid/common/sched/$(DEPDIR) src/mpid/common/sock/poll/$(DEPDIR) src/mpid/common/thread/$(DEPDIR) src/mpid/pamid/src/$(DEPDIR) src/mpid/pamid/src/coll/$(DEPDIR) src/mpid/pamid/src/coll/allgather/$(DEPDIR) src/mpid/pamid/src/coll/allgatherv/$(DEPDIR) src/mpid/pamid/src/coll/allreduce/$(DEPDIR) src/mpid/pamid/src/coll/alltoall/$(DEPDIR) src/mpid/pamid/src/coll/alltoallv/$(DEPDIR) src/mpid/pamid/src/coll/alltoallw/$(DEPDIR) src/mpid/pamid/src/coll/barrier/$(DEPDIR) src/mpid/pamid/src/coll/bcast/$(DEPDIR) src/mpid/pamid/src/coll/exscan/$(DEPDIR) src/mpid/pamid/src/coll/gather/$(DEPDIR) src/mpid/pamid/src/coll/gatherv/$(DEPDIR) src/mpid/pamid/src/coll/ired_scat/$(DEPDIR) src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR) src/mpid/pamid/src/coll/reduce/$(DEPDIR) src/mpid/pamid/src/coll/scan/$(DEPDIR) src/mpid/pamid/src/coll/scatter/$(DEPDIR) src/mpid/pamid/src/coll/scatterv/$(DEPDIR) src/mpid/pamid/src/comm/$(DEPDIR) src/mpid/pamid/src/dyntask/$(DEPDIR) src/mpid/pamid/src/misc/$(DEPDIR) src/mpid/pamid/src/mpix/$(DEPDIR) src/mpid/pamid/src/onesided/$(DEPDIR) src/mpid/pamid/src/pamix/$(DEPDIR) src/mpid/pamid/src/pt2pt/$(DEPDIR) src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR) src/mutex/$(DEPDIR) src/nameserv/file/$(DEPDIR) src/nameserv/mpd/$(DEPDIR) src/nameserv/pmi/$(DEPDIR) src/pm/gforker/$(DEPDIR) src/pm/remshell/$(DEPDIR) src/pm/util/$(DEPDIR) src/pmi/pmi2/poe/$(DEPDIR) src/pmi/pmi2/simple/$(DEPDIR) src/pmi/simple/$(DEPDIR) src/util/cvar/$(DEPDIR) src/util/dbg/$(DEPDIR) src/util/instrm/$(DEPDIR) src/util/logging/rlog/$(DEPDIR) src/util/mem/$(DEPDIR) src/util/msgs/$(DEPDIR) src/util/other/$(DEPDIR) src/util/procmap/$(DEPDIR) src/util/thread/$(DEPDIR)
++	-rm -rf src/binding/cxx/$(DEPDIR) src/binding/f77/$(DEPDIR) src/binding/f90/$(DEPDIR) src/env/$(DEPDIR) src/glue/romio/$(DEPDIR) src/mpi/attr/$(DEPDIR) src/mpi/coll/$(DEPDIR) src/mpi/comm/$(DEPDIR) src/mpi/datatype/$(DEPDIR) src/mpi/debugger/$(DEPDIR) src/mpi/errhan/$(DEPDIR) src/mpi/group/$(DEPDIR) src/mpi/info/$(DEPDIR) src/mpi/init/$(DEPDIR) src/mpi/misc/$(DEPDIR) src/mpi/pt2pt/$(DEPDIR) src/mpi/rma/$(DEPDIR) src/mpi/spawn/$(DEPDIR) src/mpi/timer/$(DEPDIR) src/mpi/topo/$(DEPDIR) src/mpi_t/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/ib/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/mx/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/newmad/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/none/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR) src/mpid/ch3/channels/nemesis/src/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/monitor/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/replacements/$(DEPDIR) src/mpid/ch3/channels/sock/src/$(DEPDIR) src/mpid/ch3/src/$(DEPDIR) src/mpid/ch3/util/ftb/$(DEPDIR) src/mpid/ch3/util/sock/$(DEPDIR) src/mpid/common/datatype/$(DEPDIR) src/mpid/common/datatype/dataloop/$(DEPDIR) src/mpid/common/sched/$(DEPDIR) src/mpid/common/sock/poll/$(DEPDIR) src/mpid/common/thread/$(DEPDIR) src/mutex/$(DEPDIR) src/nameserv/file/$(DEPDIR) src/nameserv/mpd/$(DEPDIR) src/nameserv/pmi/$(DEPDIR) src/pm/gforker/$(DEPDIR) src/pm/remshell/$(DEPDIR) src/pm/util/$(DEPDIR) src/pmi/pmi2/poe/$(DEPDIR) src/pmi/pmi2/simple/$(DEPDIR) src/pmi/simple/$(DEPDIR) src/util/cvar/$(DEPDIR) src/util/dbg/$(DEPDIR) src/util/instrm/$(DEPDIR) src/util/logging/rlog/$(DEPDIR) src/util/mem/$(DEPDIR) src/util/msgs/$(DEPDIR) src/util/other/$(DEPDIR) src/util/procmap/$(DEPDIR) src/util/thread/$(DEPDIR)
+ 	-rm -f Makefile
+ distclean-am: clean-am distclean-compile distclean-generic \
+ 	distclean-hdr distclean-libtool distclean-local distclean-tags
+@@ -24509,7 +23266,7 @@ installcheck-am:
+ maintainer-clean: maintainer-clean-recursive
+ 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
+ 	-rm -rf $(top_srcdir)/autom4te.cache
+-	-rm -rf src/binding/cxx/$(DEPDIR) src/binding/f77/$(DEPDIR) src/binding/f90/$(DEPDIR) src/env/$(DEPDIR) src/glue/romio/$(DEPDIR) src/mpi/attr/$(DEPDIR) src/mpi/coll/$(DEPDIR) src/mpi/comm/$(DEPDIR) src/mpi/datatype/$(DEPDIR) src/mpi/debugger/$(DEPDIR) src/mpi/errhan/$(DEPDIR) src/mpi/group/$(DEPDIR) src/mpi/info/$(DEPDIR) src/mpi/init/$(DEPDIR) src/mpi/misc/$(DEPDIR) src/mpi/pt2pt/$(DEPDIR) src/mpi/rma/$(DEPDIR) src/mpi/spawn/$(DEPDIR) src/mpi/timer/$(DEPDIR) src/mpi/topo/$(DEPDIR) src/mpi_t/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/ib/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/mx/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/newmad/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/none/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/scif/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR) src/mpid/ch3/channels/nemesis/src/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/monitor/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/replacements/$(DEPDIR) src/mpid/ch3/channels/sock/src/$(DEPDIR) src/mpid/ch3/src/$(DEPDIR) src/mpid/ch3/util/ftb/$(DEPDIR) src/mpid/ch3/util/sock/$(DEPDIR) src/mpid/common/datatype/$(DEPDIR) src/mpid/common/datatype/dataloop/$(DEPDIR) src/mpid/common/sched/$(DEPDIR) src/mpid/common/sock/poll/$(DEPDIR) src/mpid/common/thread/$(DEPDIR) src/mpid/pamid/src/$(DEPDIR) src/mpid/pamid/src/coll/$(DEPDIR) src/mpid/pamid/src/coll/allgather/$(DEPDIR) src/mpid/pamid/src/coll/allgatherv/$(DEPDIR) src/mpid/pamid/src/coll/allreduce/$(DEPDIR) src/mpid/pamid/src/coll/alltoall/$(DEPDIR) src/mpid/pamid/src/coll/alltoallv/$(DEPDIR) src/mpid/pamid/src/coll/alltoallw/$(DEPDIR) src/mpid/pamid/src/coll/barrier/$(DEPDIR) src/mpid/pamid/src/coll/bcast/$(DEPDIR) src/mpid/pamid/src/coll/exscan/$(DEPDIR) src/mpid/pamid/src/coll/gather/$(DEPDIR) src/mpid/pamid/src/coll/gatherv/$(DEPDIR) src/mpid/pamid/src/coll/ired_scat/$(DEPDIR) src/mpid/pamid/src/coll/ired_scat_block/$(DEPDIR) src/mpid/pamid/src/coll/reduce/$(DEPDIR) src/mpid/pamid/src/coll/scan/$(DEPDIR) src/mpid/pamid/src/coll/scatter/$(DEPDIR) src/mpid/pamid/src/coll/scatterv/$(DEPDIR) src/mpid/pamid/src/comm/$(DEPDIR) src/mpid/pamid/src/dyntask/$(DEPDIR) src/mpid/pamid/src/misc/$(DEPDIR) src/mpid/pamid/src/mpix/$(DEPDIR) src/mpid/pamid/src/onesided/$(DEPDIR) src/mpid/pamid/src/pamix/$(DEPDIR) src/mpid/pamid/src/pt2pt/$(DEPDIR) src/mpid/pamid/src/pt2pt/persistent/$(DEPDIR) src/mutex/$(DEPDIR) src/nameserv/file/$(DEPDIR) src/nameserv/mpd/$(DEPDIR) src/nameserv/pmi/$(DEPDIR) src/pm/gforker/$(DEPDIR) src/pm/remshell/$(DEPDIR) src/pm/util/$(DEPDIR) src/pmi/pmi2/poe/$(DEPDIR) src/pmi/pmi2/simple/$(DEPDIR) src/pmi/simple/$(DEPDIR) src/util/cvar/$(DEPDIR) src/util/dbg/$(DEPDIR) src/util/instrm/$(DEPDIR) src/util/logging/rlog/$(DEPDIR) src/util/mem/$(DEPDIR) src/util/msgs/$(DEPDIR) src/util/other/$(DEPDIR) src/util/procmap/$(DEPDIR) src/util/thread/$(DEPDIR)
++	-rm -rf src/binding/cxx/$(DEPDIR) src/binding/f77/$(DEPDIR) src/binding/f90/$(DEPDIR) src/env/$(DEPDIR) src/glue/romio/$(DEPDIR) src/mpi/attr/$(DEPDIR) src/mpi/coll/$(DEPDIR) src/mpi/comm/$(DEPDIR) src/mpi/datatype/$(DEPDIR) src/mpi/debugger/$(DEPDIR) src/mpi/errhan/$(DEPDIR) src/mpi/group/$(DEPDIR) src/mpi/info/$(DEPDIR) src/mpi/init/$(DEPDIR) src/mpi/misc/$(DEPDIR) src/mpi/pt2pt/$(DEPDIR) src/mpi/rma/$(DEPDIR) src/mpi/spawn/$(DEPDIR) src/mpi/timer/$(DEPDIR) src/mpi/topo/$(DEPDIR) src/mpi_t/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/ib/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/mx/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/newmad/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/none/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/portals4/$(DEPDIR) src/mpid/ch3/channels/nemesis/netmod/tcp/$(DEPDIR) src/mpid/ch3/channels/nemesis/src/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/monitor/$(DEPDIR) src/mpid/ch3/channels/nemesis/utils/replacements/$(DEPDIR) src/mpid/ch3/channels/sock/src/$(DEPDIR) src/mpid/ch3/src/$(DEPDIR) src/mpid/ch3/util/ftb/$(DEPDIR) src/mpid/ch3/util/sock/$(DEPDIR) src/mpid/common/datatype/$(DEPDIR) src/mpid/common/datatype/dataloop/$(DEPDIR) src/mpid/common/sched/$(DEPDIR) src/mpid/common/sock/poll/$(DEPDIR) src/mpid/common/thread/$(DEPDIR) src/mutex/$(DEPDIR) src/nameserv/file/$(DEPDIR) src/nameserv/mpd/$(DEPDIR) src/nameserv/pmi/$(DEPDIR) src/pm/gforker/$(DEPDIR) src/pm/remshell/$(DEPDIR) src/pm/util/$(DEPDIR) src/pmi/pmi2/poe/$(DEPDIR) src/pmi/pmi2/simple/$(DEPDIR) src/pmi/simple/$(DEPDIR) src/util/cvar/$(DEPDIR) src/util/dbg/$(DEPDIR) src/util/instrm/$(DEPDIR) src/util/logging/rlog/$(DEPDIR) src/util/mem/$(DEPDIR) src/util/msgs/$(DEPDIR) src/util/other/$(DEPDIR) src/util/procmap/$(DEPDIR) src/util/thread/$(DEPDIR)
+ 	-rm -f Makefile
+ maintainer-clean-am: distclean-am maintainer-clean-generic
+ 
+diff -rup mpich-3.1-rh.old/src/pm/hydra/Makefile.in mpich-3.1-rh/src/pm/hydra/Makefile.in
+--- mpich-3.1-rh.old/src/pm/hydra/Makefile.in	2014-05-28 15:57:19.000000000 -0400
++++ mpich-3.1-rh/src/pm/hydra/Makefile.in	2014-05-28 16:11:03.000000000 -0400
+@@ -117,8 +117,6 @@ DIST_COMMON = $(srcdir)/utils/Makefile.m
+ 	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
+ 	$(top_srcdir)/configure $(am__configure_deps) \
+ 	$(top_srcdir)/include/hydra_config.h.in \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/include/private/autogen/config.h.in \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/include/hwloc/autogen/config.h.in \
+ 	$(top_srcdir)/tools/bootstrap/src/bsci_init.c.in \
+ 	$(srcdir)/hydra-doxygen.cfg.in $(top_srcdir)/confdb/depcomp \
+ 	$(am__noinst_HEADERS_DIST) README confdb/ar-lib confdb/compile \
+@@ -131,15 +129,8 @@ DIST_COMMON = $(srcdir)/utils/Makefile.m
+ 	$(top_srcdir)/confdb/missing
+ @hydra_have_hwloc_TRUE@am__append_1 = tools/topo/hwloc/topo_hwloc.c
+ @hydra_have_hwloc_TRUE@am__append_2 = tools/topo/hwloc/topo_hwloc.h
+-@hydra_have_hwloc_TRUE@@hydra_use_embedded_hwloc_TRUE@am__append_3 = -I$(top_srcdir)/tools/topo/hwloc/hwloc/include \
+-@hydra_have_hwloc_TRUE@@hydra_use_embedded_hwloc_TRUE@	-I$(top_builddir)/tools/topo/hwloc/hwloc/include
+ 
+ 
+-# Append hwloc to the external subdirs, so it gets built first
+-@hydra_have_hwloc_TRUE@@hydra_use_embedded_hwloc_TRUE@am__append_4 = tools/topo/hwloc/hwloc
+-@hydra_have_hwloc_TRUE@@hydra_use_embedded_hwloc_TRUE@am__append_5 = tools/topo/hwloc/hwloc
+-@hydra_have_hwloc_TRUE@@hydra_use_embedded_hwloc_TRUE@am__append_6 = -L$(top_builddir)/tools/topo/hwloc/hwloc/src
+-@hydra_have_hwloc_TRUE@@hydra_use_embedded_hwloc_TRUE@am__append_7 = -lhwloc_embedded
+ @hydra_bss_external_TRUE@am__append_8 = \
+ @hydra_bss_external_TRUE@    tools/bootstrap/external/common.h \
+ @hydra_bss_external_TRUE@    tools/bootstrap/external/ll.h     \
+@@ -250,21 +241,13 @@ am__aclocal_m4_deps = $(top_srcdir)/conf
+ 	$(top_srcdir)/confdb/ltsugar.m4 \
+ 	$(top_srcdir)/confdb/ltversion.m4 \
+ 	$(top_srcdir)/confdb/lt~obsolete.m4 $(top_srcdir)/version.m4 \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/config/hwloc.m4 \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/config/hwloc_check_attributes.m4 \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/config/hwloc_check_visibility.m4 \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/config/hwloc_check_vendor.m4 \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/config/hwloc_components.m4 \
+-	$(top_srcdir)/tools/topo/hwloc/hwloc/config/hwloc_pkg.m4 \
+ 	$(top_srcdir)/configure.ac
+ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
+ 	$(ACLOCAL_M4)
+ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
+  configure.lineno config.status.lineno
+ mkinstalldirs = $(install_sh) -d
+-CONFIG_HEADER = $(top_builddir)/include/hydra_config.h \
+-	$(top_builddir)/tools/topo/hwloc/hwloc/include/private/autogen/config.h \
+-	$(top_builddir)/tools/topo/hwloc/hwloc/include/hwloc/autogen/config.h
++CONFIG_HEADER = $(top_builddir)/include/hydra_config.h
+ CONFIG_CLEAN_FILES = tools/bootstrap/src/bsci_init.c hydra-doxygen.cfg
+ CONFIG_CLEAN_VPATH_FILES =
+ LTLIBRARIES = $(noinst_LTLIBRARIES)
+@@ -476,7 +459,7 @@ AM_V_at = $(am__v_at_@AM_V@)
+ am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
+ am__v_at_0 = @
+ am__v_at_1 = 
+-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include -I$(top_builddir)/tools/topo/hwloc/hwloc/include/private/autogen -I$(top_builddir)/tools/topo/hwloc/hwloc/include/hwloc/autogen
++DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include
+ depcomp = $(SHELL) $(top_srcdir)/confdb/depcomp
+ am__depfiles_maybe = depfiles
+ am__mv = mv -f
+@@ -641,39 +624,6 @@ EXEEXT = @EXEEXT@
+ FGREP = @FGREP@
+ GCOV = @GCOV@
+ GREP = @GREP@
+-HWLOC_CFLAGS = @HWLOC_CFLAGS@
+-HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
+-HWLOC_CUDA_LIBS = @HWLOC_CUDA_LIBS@
+-HWLOC_EMBEDDED_CFLAGS = @HWLOC_EMBEDDED_CFLAGS@
+-HWLOC_EMBEDDED_CPPFLAGS = @HWLOC_EMBEDDED_CPPFLAGS@
+-HWLOC_EMBEDDED_LDADD = @HWLOC_EMBEDDED_LDADD@
+-HWLOC_EMBEDDED_LIBS = @HWLOC_EMBEDDED_LIBS@
+-HWLOC_GL_LIBS = @HWLOC_GL_LIBS@
+-HWLOC_HAVE_LIBXML2 = @HWLOC_HAVE_LIBXML2@
+-HWLOC_HAVE_NVML = @HWLOC_HAVE_NVML@
+-HWLOC_HAVE_OPENCL = @HWLOC_HAVE_OPENCL@
+-HWLOC_KERRIGHED_CFLAGS = @HWLOC_KERRIGHED_CFLAGS@
+-HWLOC_KERRIGHED_LIBS = @HWLOC_KERRIGHED_LIBS@
+-HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
+-HWLOC_LIBS = @HWLOC_LIBS@
+-HWLOC_LIBS_PRIVATE = @HWLOC_LIBS_PRIVATE@
+-HWLOC_LIBXML2_CFLAGS = @HWLOC_LIBXML2_CFLAGS@
+-HWLOC_LIBXML2_LIBS = @HWLOC_LIBXML2_LIBS@
+-HWLOC_LINUX_LIBNUMA_LIBS = @HWLOC_LINUX_LIBNUMA_LIBS@
+-HWLOC_MS_LIB = @HWLOC_MS_LIB@
+-HWLOC_MS_LIB_ARCH = @HWLOC_MS_LIB_ARCH@
+-HWLOC_NVML_LIBS = @HWLOC_NVML_LIBS@
+-HWLOC_OPENCL_LIBS = @HWLOC_OPENCL_LIBS@
+-HWLOC_PCIACCESS_CFLAGS = @HWLOC_PCIACCESS_CFLAGS@
+-HWLOC_PCIACCESS_LIBS = @HWLOC_PCIACCESS_LIBS@
+-HWLOC_PCIUTILS_CFLAGS = @HWLOC_PCIUTILS_CFLAGS@
+-HWLOC_PCIUTILS_LIBS = @HWLOC_PCIUTILS_LIBS@
+-HWLOC_PLUGINS_DIR = @HWLOC_PLUGINS_DIR@
+-HWLOC_PLUGINS_PATH = @HWLOC_PLUGINS_PATH@
+-HWLOC_REQUIRES = @HWLOC_REQUIRES@
+-HWLOC_X11_LIBS = @HWLOC_X11_LIBS@
+-HWLOC_top_builddir = @HWLOC_top_builddir@
+-HWLOC_top_srcdir = @HWLOC_top_srcdir@
+ HYDRA_PMI_PROXY = @HYDRA_PMI_PROXY@
+ HYDRA_VERSION = @HYDRA_VERSION@
+ INSTALL = @INSTALL@
+@@ -940,24 +890,8 @@ $(top_srcdir)/include/hydra_config.h.in:
+ 	rm -f include/stamp-h1
+ 	touch $@
+ 
+-tools/topo/hwloc/hwloc/include/private/autogen/config.h: tools/topo/hwloc/hwloc/include/private/autogen/stamp-h2
+-	@test -f $@ || rm -f tools/topo/hwloc/hwloc/include/private/autogen/stamp-h2
+-	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) tools/topo/hwloc/hwloc/include/private/autogen/stamp-h2
+-
+-tools/topo/hwloc/hwloc/include/private/autogen/stamp-h2: $(top_srcdir)/tools/topo/hwloc/hwloc/include/private/autogen/config.h.in $(top_builddir)/config.status
+-	@rm -f tools/topo/hwloc/hwloc/include/private/autogen/stamp-h2
+-	cd $(top_builddir) && $(SHELL) ./config.status tools/topo/hwloc/hwloc/include/private/autogen/config.h
+-
+-tools/topo/hwloc/hwloc/include/hwloc/autogen/config.h: tools/topo/hwloc/hwloc/include/hwloc/autogen/stamp-h3
+-	@test -f $@ || rm -f tools/topo/hwloc/hwloc/include/hwloc/autogen/stamp-h3
+-	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) tools/topo/hwloc/hwloc/include/hwloc/autogen/stamp-h3
+-
+-tools/topo/hwloc/hwloc/include/hwloc/autogen/stamp-h3: $(top_srcdir)/tools/topo/hwloc/hwloc/include/hwloc/autogen/config.h.in $(top_builddir)/config.status
+-	@rm -f tools/topo/hwloc/hwloc/include/hwloc/autogen/stamp-h3
+-	cd $(top_builddir) && $(SHELL) ./config.status tools/topo/hwloc/hwloc/include/hwloc/autogen/config.h
+-
+ distclean-hdr:
+-	-rm -f include/hydra_config.h include/stamp-h1 tools/topo/hwloc/hwloc/include/private/autogen/config.h tools/topo/hwloc/hwloc/include/private/autogen/stamp-h2 tools/topo/hwloc/hwloc/include/hwloc/autogen/config.h tools/topo/hwloc/hwloc/include/hwloc/autogen/stamp-h3
++	-rm -f include/hydra_config.h include/stamp-h1
+ tools/bootstrap/src/bsci_init.c: $(top_builddir)/config.status $(top_srcdir)/tools/bootstrap/src/bsci_init.c.in
+ 	cd $(top_builddir) && $(SHELL) ./config.status $@
+ hydra-doxygen.cfg: $(top_builddir)/config.status $(srcdir)/hydra-doxygen.cfg.in

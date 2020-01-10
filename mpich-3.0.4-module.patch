@@ -1,0 +1,30 @@
+--- mpich-3.0.4/src/packaging/envmods/mpich.module.in.orig	2013-10-03 14:59:05.000000000 -0400
++++ mpich-3.0.4/src/packaging/envmods/mpich.module.in	2013-10-03 15:43:57.000000000 -0400
+@@ -3,12 +3,19 @@
+ #  MPICH module for use with 'environment-modules' package:
+ # 
+ 
+-# Define prefix so PATH and MANPATH can be updated.
+-setenv        prefix        @prefix@
+-setenv        exec_prefix   @exec_prefix@
+-prepend-path  PATH          @bindir@
+-prepend-path  MANPATH       @mandir@
++conflict	mpi
++prepend-path	PATH			@LIBDIR@/bin
++prepend-path	LD_LIBRARY_PATH		@LIBDIR@/lib
++prepend-path	MANPATH			@MANDIR@
++
++setenv		MPI_BIN			@LIBDIR@/bin
++setenv		MPI_SYSCONFIG		@ETCDIR@
++setenv		MPI_FORTRAN_MOD_DIR	@FMODDIR@
++setenv		MPI_INCLUDE		@INCDIR@
++setenv		MPI_LIB			@LIBDIR@/lib
++setenv		MPI_MAN			@MANDIR@
++setenv		MPI_PYTHON_SITEARCH	@PYSITEARCH@
++setenv		MPI_COMPILER		@COMPILER@
++setenv		MPI_SUFFIX		@SUFFIX@
++setenv		MPI_HOME		@LIBDIR@
+ 
+-# Undefine prefix and exec_prefix which are too generic environment variables.
+-unsetenv      prefix
+-unsetenv      exec_prefix
