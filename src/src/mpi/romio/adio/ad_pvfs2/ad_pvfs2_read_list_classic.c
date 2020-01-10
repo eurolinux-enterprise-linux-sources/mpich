@@ -19,10 +19,11 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
     /* offset is in units of etype relative to the filetype. */
     ADIOI_Flatlist_node *flat_buf, *flat_file;
     int i, j, k,  brd_size, frd_size=0, st_index=0;
-    int bufsize, sum, n_etypes_in_filetype, size_in_filetype;
+    int sum, n_etypes_in_filetype, size_in_filetype;
+    MPI_Count bufsize;
     int n_filetypes, etype_in_filetype;
     ADIO_Offset abs_off_in_filetype=0;
-    int filetype_size, etype_size, buftype_size;
+    MPI_Count filetype_size, etype_size, buftype_size;
     MPI_Aint filetype_extent, buftype_extent; 
     int buf_count, buftype_is_contig, filetype_is_contig;
     ADIO_Offset off, disp, start_off, initial_off;
@@ -68,7 +69,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 	    filetype_is_contig = 1;
     }
 
-    MPI_Type_size(fd->filetype, &filetype_size);
+    MPI_Type_size_x(fd->filetype, &filetype_size);
     if ( ! filetype_size ) {
 #ifdef HAVE_STATUS_SET_BYTES
 	MPIR_Status_set_bytes(status, datatype, 0);
@@ -78,7 +79,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
     }
 
     MPI_Type_extent(fd->filetype, &filetype_extent);
-    MPI_Type_size(datatype, &buftype_size);
+    MPI_Type_size_x(datatype, &buftype_size);
     MPI_Type_extent(datatype, &buftype_extent);
     etype_size = fd->etype_size;
 
@@ -89,19 +90,17 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
     if (!buftype_is_contig && filetype_is_contig) {
 
 /* noncontiguous in memory, contiguous in file. */
-        int64_t file_offsets;
-	int32_t file_lengths;
+       int64_t file_offset;
+	int32_t file_length;
 
-	ADIOI_Flatten_datatype(datatype);
-	flat_buf = ADIOI_Flatlist;
-	while (flat_buf->type != datatype) flat_buf = flat_buf->next;
+	flat_buf = ADIOI_Flatten_and_find(datatype);
 
 	off = (file_ptr_type == ADIO_INDIVIDUAL) ? fd->fp_ind : 
 	    fd->disp + etype_size * offset;
 
 	file_list_count = 1;
-	file_offsets = off;
-	file_lengths = 0;
+	file_offset = off;
+	file_length = 0;
 	total_blks_to_read = count*flat_buf->count;
 	b_blks_read = 0;
 
@@ -123,7 +122,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 		    ((PVFS_size)buf + j*buftype_extent + flat_buf->indices[i]);
 		mem_lengths[b_blks_read % MAX_ARRAY_SIZE] = 
 		    flat_buf->blocklens[i];
-		file_lengths += flat_buf->blocklens[i];
+		file_length += flat_buf->blocklens[i];
 		b_blks_read++;
 		if (!(b_blks_read % MAX_ARRAY_SIZE) ||
 		    (b_blks_read == total_blks_to_read)) {
@@ -138,14 +137,14 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 		    err_flag = PVFS_Request_hindexed(mem_list_count, 
 			    mem_lengths, mem_offsets, PVFS_BYTE, &mem_req);
 		    if (err_flag < 0) break;
-		    err_flag = PVFS_Request_contiguous(file_lengths, 
+		    err_flag = PVFS_Request_contiguous(file_length,
 			    PVFS_BYTE, &file_req);
 		    if (err_flag < 0) break;
 #ifdef ADIOI_MPE_LOGGING
                     MPE_Log_event( ADIOI_MPE_read_a, 0, NULL );
 #endif
 		    err_flag = PVFS_sys_read(pvfs_fs->object_ref, file_req, 
-			    file_offsets, PVFS_BOTTOM, mem_req, 
+			    file_offset, PVFS_BOTTOM, mem_req,
 			    &(pvfs_fs->credentials), &resp_io);
 #ifdef ADIOI_MPE_LOGGING
                     MPE_Log_event( ADIOI_MPE_read_b, 0, NULL );
@@ -168,8 +167,8 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 		     * leave here */
 		    if (err_flag || b_blks_read == total_blks_to_read) break;
 
-		    file_offsets += file_lengths;
-		    file_lengths = 0;
+		    file_offset += file_length;
+		    file_length = 0;
 		} 
 	    } /* for (i=0; i<flat_buf->count; i++) */
 	    j++;
@@ -261,8 +260,8 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 /* contiguous in memory, noncontiguous in file. should be the most
    common case. */
 
-        int mem_lengths;
-	char *mem_offsets;
+       int mem_length=0;
+	intptr_t mem_offset;
 	
 	i = 0;
 	j = st_index;
@@ -290,7 +289,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 	n_read_lists = total_blks_to_read/MAX_ARRAY_SIZE;
 	extra_blks = total_blks_to_read%MAX_ARRAY_SIZE;
 	
-	mem_offsets = buf;
+	mem_offset = (intptr_t)buf;
 	mem_lengths = 0;
 	
 	/* if at least one full readlist, allocate file arrays
@@ -316,7 +315,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 	    if(!i) {
 	        file_offsets[0] = offset;
 		file_lengths[0] = st_frd_size;
-		mem_lengths = st_frd_size;
+		mem_length = st_frd_size;
 	    }
 	    for (k=0; k<MAX_ARRAY_SIZE; k++) {
 	        if (i || k) {
@@ -332,7 +331,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 		    n_filetypes++;
 		}
 	    } /* for (k=0; k<MAX_ARRAY_SIZE; k++) */
-	    err_flag = PVFS_Request_contiguous(mem_lengths, 
+	    err_flag = PVFS_Request_contiguous(mem_length,
 					       PVFS_BYTE, &mem_req);
 	    /* --BEGIN ERROR HANDLING-- */
 	    if (err_flag != 0) {
@@ -366,7 +365,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
             MPE_Log_event( ADIOI_MPE_read_a, 0, NULL );
 #endif
 	    err_flag = PVFS_sys_read(pvfs_fs->object_ref, file_req, 0, 
-				     mem_offsets, mem_req,
+				     (void *)mem_offset, mem_req,
 				     &(pvfs_fs->credentials), &resp_io);
 #ifdef ADIOI_MPE_LOGGING
             MPE_Log_event( ADIOI_MPE_read_b, 0, NULL );
@@ -386,7 +385,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 
 	    total_bytes_read += resp_io.total_completed;
 
-	    mem_offsets += mem_lengths;
+	    mem_offset += mem_length;
 	    mem_lengths = 0;
 	} /* for (i=0; i<n_read_lists; i++) */
 
@@ -404,7 +403,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 			flat_file->indices[j];
 		    if (k == (extra_blks - 1)) {
 		        file_lengths[k] = bufsize - (int32_t) mem_lengths
-			  - (int32_t) mem_offsets + (int32_t)  buf;
+			  - mem_offset + (int32_t)  buf;
 		    }
 		    else file_lengths[k] = flat_file->blocklens[j];
 		} /* if(i || k) */
@@ -415,7 +414,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
 		    n_filetypes++;
 		}
 	    } /* for (k=0; k<extra_blks; k++) */
-	    err_flag = PVFS_Request_contiguous(mem_lengths,
+	    err_flag = PVFS_Request_contiguous(mem_length,
 					       PVFS_BYTE, &mem_req);
 	    /* --BEGIN ERROR HANDLING-- */
 	    if (err_flag != 0) {
@@ -446,7 +445,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
             MPE_Log_event( ADIOI_MPE_read_a, 0, NULL );
 #endif
 	    err_flag = PVFS_sys_read(pvfs_fs->object_ref, file_req, 0, 
-		    mem_offsets, mem_req, &(pvfs_fs->credentials), &resp_io);
+		    (void *)mem_offset, mem_req, &(pvfs_fs->credentials), &resp_io);
 #ifdef ADIOI_MPE_LOGGING
             MPE_Log_event( ADIOI_MPE_read_b, 0, NULL );
 #endif
@@ -468,9 +467,7 @@ void ADIOI_PVFS2_OldReadStrided(ADIO_File fd, void *buf, int count,
     else {
 /* noncontiguous in memory as well as in file */
       
-        ADIOI_Flatten_datatype(datatype);
-	flat_buf = ADIOI_Flatlist;
-	while (flat_buf->type != datatype) flat_buf = flat_buf->next;
+	flat_buf = ADIOI_Flatten_and_find(datatype);
 
 	size_read = 0;
 	n_filetypes = st_n_filetypes;

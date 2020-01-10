@@ -16,6 +16,8 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_set_info as PMPI_File_set_info
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_set_info(MPI_File fh, MPI_Info info) __attribute__((weak,alias("PMPI_File_set_info")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -38,13 +40,13 @@ int MPI_File_set_info(MPI_File fh, MPI_Info info)
     static char myname[] = "MPI_FILE_SET_INFO";
     ADIO_File adio_fh;
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     adio_fh = MPIO_File_resolve(fh);
 
     /* --BEGIN ERROR HANDLING-- */
     MPIO_CHECK_FILE_HANDLE(adio_fh, myname, error_code);
-    MPIO_CHECK_INFO(info, error_code);
+    MPIO_CHECK_INFO_ALL(info, error_code, fh->comm);
     /* --END ERROR HANDLING-- */
 
     /* set new info */
@@ -56,7 +58,7 @@ fn_exit:
 	error_code = MPIO_Err_return_file(adio_fh, error_code);
     /* --END ERROR HANDLING-- */
 
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
 
     return error_code;
 fn_fail:

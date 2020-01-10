@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_lb  MPI_Type_lb
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_lb as PMPI_Type_lb
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_lb(MPI_Datatype datatype, MPI_Aint *displacement) __attribute__((weak,alias("PMPI_Type_lb")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,7 +28,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Type_lb_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_Type_lb_impl(MPI_Datatype datatype, MPI_Aint *displacement)
 {
     if (HANDLE_GET_KIND(datatype) == HANDLE_KIND_BUILTIN) {
@@ -69,7 +71,6 @@ The replacement for this routine is 'MPI_Type_Get_extent'.
 int MPI_Type_lb(MPI_Datatype datatype, MPI_Aint *displacement)
 {
     int mpi_errno = MPI_SUCCESS;
-    MPID_Datatype *datatype_ptr = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_LB);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
@@ -87,14 +88,16 @@ int MPI_Type_lb(MPI_Datatype datatype, MPI_Aint *displacement)
     }
 #   endif
 
-    /* Convert MPI object handles to object pointers */
-    MPID_Datatype_get_ptr(datatype, datatype_ptr);
-
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
+            /* Convert MPI object handles to object pointers */
+            MPID_Datatype_get_ptr(datatype, datatype_ptr);
+
             /* Validate datatype_ptr */
             MPID_Datatype_valid_ptr(datatype_ptr, mpi_errno);
             if (mpi_errno) goto fn_fail;

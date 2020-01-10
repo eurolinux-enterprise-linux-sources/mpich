@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_delete_attr  MPI_Comm_delete_attr
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_delete_attr as PMPI_Comm_delete_attr
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_delete_attr(MPI_Comm comm, int comm_keyval) __attribute__((weak,alias("PMPI_Comm_delete_attr")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Comm_delete_attr_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Comm_delete_attr_impl(MPID_Comm *comm_ptr, MPID_Keyval *keyval_ptr)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -83,7 +85,7 @@ int MPIR_Comm_delete_attr_impl(MPID_Comm *comm_ptr, MPID_Keyval *keyval_ptr)
 #undef FUNCNAME
 #define FUNCNAME MPI_Comm_delete_attr
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
    MPI_Comm_delete_attr - Deletes an attribute value associated with a key on 
    a  communicator
@@ -112,7 +114,7 @@ int MPI_Comm_delete_attr(MPI_Comm comm, int comm_keyval)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_DELETE_ATTR);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -138,7 +140,7 @@ int MPI_Comm_delete_attr(MPI_Comm comm, int comm_keyval)
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
 	    /* If comm_ptr is not valid, it will be reset to null */
             /* Validate keyval_ptr */
 	    MPID_Keyval_valid_ptr( keyval_ptr, mpi_errno );
@@ -157,7 +159,7 @@ int MPI_Comm_delete_attr(MPI_Comm comm, int comm_keyval)
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_DELETE_ATTR);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

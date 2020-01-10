@@ -19,6 +19,8 @@
 #pragma _HP_SECONDARY_DEF PMPIX_Mutex_free  MPIX_Mutex_free
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPIX_Mutex_free as PMPIX_Mutex_free
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPIX_Mutex_free(MPIX_Mutex * hdl_ptr) __attribute__((weak,alias("PMPIX_Mutex_free")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -32,7 +34,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIX_Mutex_free
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 
 /** Free a group of MPI mutexes.  Collective on communicator used at the
   * time of creation.

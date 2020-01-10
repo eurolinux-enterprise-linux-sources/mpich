@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_set_name  MPI_Type_set_name
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_set_name as PMPI_Type_set_name
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_set_name(MPI_Datatype datatype, const char *type_name) __attribute__((weak,alias("PMPI_Type_set_name")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -84,7 +86,7 @@ int MPI_Type_set_name(MPI_Datatype datatype, const char *type_name)
 	    MPIR_ERRTEST_ARGNULL(type_name,"type_name", mpi_errno);
 
 	    slen = (int)strlen( type_name );
-	    MPIU_ERR_CHKANDSTMT1((slen >= MPI_MAX_OBJECT_NAME), mpi_errno, 
+	    MPIR_ERR_CHKANDSTMT1((slen >= MPI_MAX_OBJECT_NAME), mpi_errno, 
 				 MPI_ERR_ARG,goto fn_fail, "**typenamelen",
 				    "**typenamelen %d", slen );
         }

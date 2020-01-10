@@ -18,11 +18,15 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_AIO_H
-#include <aio.h>
-#endif
-#ifdef HAVE_SYS_AIO_H
-#include <sys/aio.h>
+#ifdef HAVE_AIO_LITE_H
+#include <aio-lite.h>
+#else
+ #ifdef  HAVE_AIO_H
+ #include <aio.h>
+ #endif
+ #ifdef HAVE_SYS_AIO_H
+ #include <sys/aio.h>
+ #endif
 #endif
 
 /* Workaround for incomplete set of definitions if __REDIRECT is not 
@@ -74,7 +78,7 @@ void ADIOI_NFS_ReadStrided(ADIO_File fd, void *buf, int count,
 		       ADIO_Offset offset, ADIO_Status *status, int
 		       *error_code);
 void ADIOI_NFS_SetInfo(ADIO_File fd, MPI_Info users_info, int *error_code);
-void ADIOI_NFS_Get_shared_fp(ADIO_File fd, int size, ADIO_Offset *shared_fp, 
+void ADIOI_NFS_Get_shared_fp(ADIO_File fd, ADIO_Offset size, ADIO_Offset *shared_fp,
 			 int *error_code);
 void ADIOI_NFS_Set_shared_fp(ADIO_File fd, ADIO_Offset offset, int *error_code);
 void ADIOI_NFS_Resize(ADIO_File fd, ADIO_Offset size, int *error_code);

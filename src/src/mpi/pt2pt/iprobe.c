@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Iprobe  MPI_Iprobe
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Iprobe as PMPI_Iprobe
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status) __attribute__((weak,alias("PMPI_Iprobe")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -62,7 +64,7 @@ int MPI_Iprobe(int source, int tag, MPI_Comm comm, int *flag,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER(MPID_STATE_MPI_IPROBE);
     
     /* Validate handle parameters needing to be converted */
@@ -85,7 +87,7 @@ int MPI_Iprobe(int source, int tag, MPI_Comm comm, int *flag,
         MPID_BEGIN_ERROR_CHECKS;
         {
 	    /* Validate communicator */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 	    
 	    MPIR_ERRTEST_ARGNULL( flag, "flag", mpi_errno );
@@ -109,7 +111,7 @@ int MPI_Iprobe(int source, int tag, MPI_Comm comm, int *flag,
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT(MPID_STATE_MPI_IPROBE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

@@ -18,6 +18,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_File_set_errhandler  MPI_File_set_errhandler
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_set_errhandler as PMPI_File_set_errhandler
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_set_errhandler(MPI_File file, MPI_Errhandler errhandler) __attribute__((weak,alias("PMPI_File_set_errhandler")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -161,7 +163,7 @@ int MPI_File_set_errhandler(MPI_File file, MPI_Errhandler errhandler)
    to get the PMPI and MPI versions without weak symbols */
 #undef FUNCNAME
 #define FUNCNAME MPIR_Get_file_error_routine
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_Get_file_error_routine( MPI_Errhandler e, 
 				  void (**c)(MPI_File *, int *, ...), 
 				   int *kind )

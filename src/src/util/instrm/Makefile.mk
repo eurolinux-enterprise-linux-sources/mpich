@@ -5,7 +5,6 @@
 ##     See COPYRIGHT in top-level directory.
 ##
 
-lib_lib@MPILIBNAME@_la_SOURCES += \
-    src/util/instrm/states.c      \
+mpi_core_sources += \
     src/util/instrm/instr.c
 

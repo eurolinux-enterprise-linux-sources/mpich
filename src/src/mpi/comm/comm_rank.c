@@ -13,6 +13,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_rank  MPI_Comm_rank
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_rank as PMPI_Comm_rank
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_rank(MPI_Comm comm, int *rank) __attribute__((weak,alias("PMPI_Comm_rank")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPI_Comm_rank
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 
 /*@
 
@@ -55,7 +57,7 @@ int MPI_Comm_rank( MPI_Comm comm, int *rank )
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_RANK);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -79,8 +81,8 @@ int MPI_Comm_rank( MPI_Comm comm, int *rank )
         {
             MPIR_ERRTEST_ARGNULL(rank,"rank",mpi_errno);
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
-	    /* If comm_ptr is not value, it will be reset to null */
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
+            /* If comm_ptr is not value, it will be reset to null */
             if (mpi_errno) goto fn_fail;
         }
         MPID_END_ERROR_CHECKS;
@@ -97,7 +99,7 @@ int MPI_Comm_rank( MPI_Comm comm, int *rank )
   fn_exit:
 #endif
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_RANK);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
     /* --BEGIN ERROR HANDLING-- */

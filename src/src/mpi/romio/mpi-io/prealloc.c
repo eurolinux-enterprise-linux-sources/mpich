@@ -16,6 +16,8 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_preallocate as PMPI_File_preallocate
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_preallocate(MPI_File fh, MPI_Offset size) __attribute__((weak,alias("PMPI_File_preallocate")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -46,7 +48,7 @@ int MPI_File_preallocate(MPI_File fh, MPI_Offset size)
 		  adio_fh, MPI_DATATYPE_NULL, -1);
 #endif /* MPI_hpux */
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     adio_fh = MPIO_File_resolve(fh);
 
@@ -97,7 +99,7 @@ int MPI_File_preallocate(MPI_File fh, MPI_Offset size)
 
 
 fn_exit:
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
 
     /* TODO: bcast result? */
     if (!mynod) return error_code;

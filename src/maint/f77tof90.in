@@ -1,4 +1,4 @@
-#! @PERL@ -w
+#! /usr/bin/env perl
 # -*- Mode: perl; -*-
 #
 # f77tof90 indir outdir [ Makefile-template [Make-Append] ]
@@ -10,6 +10,8 @@
 # We also allow the file name to be modified to help out Windows, since
 # programs in a project need to have distinct names
 #
+use warnings;
+
 $indir = $ARGV[0];
 $outdir = $ARGV[1];
 $makeTemplate = $ARGV[2];
@@ -144,6 +146,10 @@ sub ConvertToF90 {
         if (/^CF90/) {
 	    s/^CF90/    /;
 	}
+    # Remove lines used only for F77, such as external MPI function declarations
+    if (/!\s*F77ONLY\s*$/i) {
+        $_ = "";
+    }
 	# Since we use interface statements for the error handlers,
 	# remove their external declaration
 	if (/^\s+external myerrhanfunc/) {
@@ -332,7 +338,7 @@ sub ConvertMakefile {
         if (not m/^\s*#/) {
             while (m/\b(\w+f)\b/g) {
                 my $word = $1;
-                next if $word eq "if" or $word eq "rf"; # filter out some noise
+                next if $word eq "if" or $word eq "rf" or $word eq "endif"; # filter out some noise
                 if (-e "$indir/${word}.f" or
                     0 == system(qq(grep 'TESTDEFN filename="${word}\\.f"' '$indir/ioharness.defn' >/dev/null 2>&1)))
                 {
@@ -472,7 +478,7 @@ sub ConvertTestlist {
 	    # Cray-style pointers for MPI_Alloc_mem).
 	    $_ = "\@ALLOCMEMFC\@\n";
 	}
-	elsif (/^(\@\w+\@)(\w+f)\s+(.*)/) {
+	elsif (/^(\@\w+\@)(\s*\w+f)\s+(.*)/) {
 	    # This handles the case where an autoconf variable in the
             # testlist.in file is used to optionally comment out a test
 	    $_ = $1 . $2 . "90 "  . $3 . "\n";

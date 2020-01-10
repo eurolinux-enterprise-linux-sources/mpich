@@ -8,6 +8,28 @@
 #include "mpiimpl.h"
 #include "mpi_init.h"
 
+/*
+=== BEGIN_MPI_T_CVAR_INFO_BLOCK ===
+
+categories:
+    - name        : DEVELOPER
+      description : useful for developers working on MPICH itself
+
+cvars:
+    - name        : MPIR_CVAR_MEMDUMP
+      category    : DEVELOPER
+      type        : boolean
+      default     : true
+      class       : device
+      verbosity   : MPI_T_VERBOSITY_MPIDEV_DETAIL
+      scope       : MPI_T_SCOPE_LOCAL
+      description : >-
+        If true, list any memory that was allocated by MPICH and that
+        remains allocated when MPI_Finalize completes.
+
+=== END_MPI_T_CVAR_INFO_BLOCK ===
+*/
+
 /* -- Begin Profiling Symbol Block for routine MPI_Finalize */
 #if defined(HAVE_PRAGMA_WEAK)
 #pragma weak MPI_Finalize = PMPI_Finalize
@@ -15,6 +37,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Finalize  MPI_Finalize
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Finalize as PMPI_Finalize
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Finalize(void) __attribute__((weak,alias("PMPI_Finalize")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -41,7 +65,7 @@ typedef struct Finalize_func_t {
 } Finalize_func_t;
 /* When full debugging is enabled, each MPI handle type has a finalize handler
    installed to detect unfreed handles.  */
-#define MAX_FINALIZE_FUNC 32
+#define MAX_FINALIZE_FUNC 64
 static Finalize_func_t fstack[MAX_FINALIZE_FUNC];
 static int fstack_sp = 0;
 static int fstack_max_priority = 0;
@@ -51,9 +75,12 @@ void MPIR_Add_finalize( int (*f)( void * ), void *extra_data, int priority )
     /* --BEGIN ERROR HANDLING-- */
     if (fstack_sp >= MAX_FINALIZE_FUNC) {
 	/* This is a little tricky.  We may want to check the state of
-	   MPIR_Process.initialized to decide how to signal the error */
-	(void)MPIU_Internal_error_printf( "overflow in finalize stack!\n" );
-	if (MPIR_Process.initialized == MPICH_WITHIN_MPI) {
+	   MPIR_Process.mpich_state to decide how to signal the error */
+	(void)MPL_internal_error_printf( "overflow in finalize stack! "
+		"Is MAX_FINALIZE_FUNC too small?\n" );
+    if (OPA_load_int(&MPIR_Process.mpich_state) == MPICH_IN_INIT ||
+        OPA_load_int(&MPIR_Process.mpich_state) == MPICH_POST_INIT)
+    {
 	    MPID_Abort( NULL, MPI_SUCCESS, 13, NULL );
 	}
 	else {
@@ -124,7 +151,7 @@ int MPI_Finalize( void )
 
     /* Note: Only one thread may ever call MPI_Finalize (MPI_Finalize may
        be called at most once in any program) */
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FINALIZE_FUNC_ENTER(MPID_STATE_MPI_FINALIZE);
     
     /* ... body of routine ... */
@@ -151,13 +178,13 @@ int MPI_Finalize( void )
     if (MPIR_Process.attr_free && MPIR_Process.comm_self->attributes) {
         mpi_errno = MPIR_Process.attr_free( MPI_COMM_SELF,
 					    &MPIR_Process.comm_self->attributes);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	MPIR_Process.comm_self->attributes = 0;
     }
     if (MPIR_Process.attr_free && MPIR_Process.comm_world->attributes) {
         mpi_errno = MPIR_Process.attr_free( MPI_COMM_WORLD, 
                                             &MPIR_Process.comm_world->attributes);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	MPIR_Process.comm_world->attributes = 0;
     }
 
@@ -166,7 +193,6 @@ int MPI_Finalize( void )
      * At this point, we will release any user-defined error handlers on 
      * comm self and comm world
      */
-    /* no MPI_OBJ CS needed here */
     if (MPIR_Process.comm_world->errhandler && 
 	! (HANDLE_GET_KIND(MPIR_Process.comm_world->errhandler->handle) == 
 	   HANDLE_KIND_BUILTIN) ) {
@@ -210,7 +236,7 @@ int MPI_Finalize( void )
 
     mpi_errno = MPID_Finalize();
     if (mpi_errno) {
-	MPIU_ERR_POP(mpi_errno);
+	MPIR_ERR_POP(mpi_errno);
     }
 
     /* Call the low-priority (post Finalize) callbacks */
@@ -220,25 +246,23 @@ int MPI_Finalize( void )
        completing the finalize */
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
+    /* Users did not call MPI_T_init_thread(), so we free memories allocated to
+     * MPIR_T during MPI_Init here. Otherwise, free them in MPI_T_finalize() */
+    if (!MPIR_T_is_initialized())
+        MPIR_T_env_finalize();
+
     /* FIXME: Many of these debugging items could/should be callbacks, 
        added to the finalize callback list */
     /* FIXME: the memory tracing code block should be a finalize callback */
     /* If memory debugging is enabled, check the memory here, after all
        finalize callbacks */
 
-    /* FIXME The init/finalize paths in general need a big overhaul in order
-     * to account for the new MPI_T_ code. */
-    if (!MPIR_T_is_initialized()) {
-        MPIR_T_finalize_pvars();
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
+    OPA_store_int(&MPIR_Process.mpich_state, MPICH_POST_FINALIZED);
 
-        mpi_errno = MPIR_Param_finalize();
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
-    }
-
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
-    MPIR_Process.initialized = MPICH_POST_FINALIZED;
-
-    MPIU_THREAD_CS_FINALIZE;
+#if defined(MPICH_IS_THREADED)
+    MPIR_Thread_CS_Finalize();
+#endif
 
     /* We place the memory tracing at the very end because any of the other
        steps may have allocated memory that they still need to release*/
@@ -247,7 +271,7 @@ int MPI_Finalize( void )
        go to separate files or to be sorted by rank (note that
        the rank is at the head of the line) */
     {
-	if (MPIR_PARAM_MEMDUMP) {
+	if (MPIR_CVAR_MEMDUMP) {
 	    /* The second argument is the min id to print; memory allocated 
 	       after MPI_Init is given an id of one.  This allows us to
 	       ignore, if desired, memory leaks in the MPID_Init call */
@@ -294,8 +318,8 @@ int MPI_Finalize( void )
     }
 #   endif
     mpi_errno = MPIR_Err_return_comm( 0, FCNAME, mpi_errno );
-    if (MPIR_Process.initialized < MPICH_POST_FINALIZED) {
-        MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    if (OPA_load_int(&MPIR_Process.mpich_state) < MPICH_POST_FINALIZED) {
+        MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     }
     goto fn_exit;
     /* --END ERROR HANDLING-- */

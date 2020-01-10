@@ -255,7 +255,6 @@ int mqs_image_has_queues (mqs_image *image, char **message)
 {
     mpich_image_info * i_info = 
 	(mpich_image_info *)dbgr_get_image_info (image);
-    int have_co = 0, have_cl = 0, have_req = 0, have_dreq = 0;
 
     /* Default failure message ! */
     *message = (char *)"The symbols and types in the MPICH library used by TotalView\n"
@@ -282,7 +281,6 @@ int mqs_image_has_queues (mqs_image *image, char **message)
 	mqs_type *cl_type = dbgr_find_type( image, (char *)"MPIR_Comm_list", 
 					    mqs_lang_c );
 	if (cl_type) {
-	    have_cl = 1;
 	    i_info->sequence_number_offs = 
 		dbgr_field_offset( cl_type, (char *)"sequence_number" );
 	    i_info->comm_head_offs = dbgr_field_offset( cl_type, (char *)"head" );
@@ -291,7 +289,6 @@ int mqs_image_has_queues (mqs_image *image, char **message)
     {
 	mqs_type *co_type = dbgr_find_type( image, (char *)"MPID_Comm", mqs_lang_c );
 	if (co_type) {
-	    have_co = 1;
 	    i_info->comm_name_offs = dbgr_field_offset( co_type, (char *)"name" );
 	    i_info->comm_next_offs = dbgr_field_offset( co_type, (char *)"comm_next" );
 	    i_info->comm_rsize_offs = dbgr_field_offset( co_type, (char *)"remote_size" );
@@ -310,7 +307,6 @@ int mqs_image_has_queues (mqs_image *image, char **message)
 	mqs_type *req_type = dbgr_find_type( image, (char *)"MPID_Request", mqs_lang_c );
 	if (req_type) {
 	    int dev_offs;
-	    have_req = 1;
 	    dev_offs = dbgr_field_offset( req_type, (char *)"dev" );
 	    i_info->req_status_offs = dbgr_field_offset( req_type, (char *)"status" );
 	    i_info->req_cc_offs     = dbgr_field_offset( req_type, (char *)"cc" );
@@ -320,7 +316,6 @@ int mqs_image_has_queues (mqs_image *image, char **message)
 		i_info->req_dev_offs = dev_offs;
 		if (dreq_type) {
 		    int loff, match_offs;
-		    have_dreq = 1;
 		    loff = dbgr_field_offset( dreq_type, (char *)"next" );
 		    i_info->req_next_offs = dev_offs + loff;
 		    loff = dbgr_field_offset( dreq_type, (char *)"user_buf" );
@@ -330,19 +325,6 @@ int mqs_image_has_queues (mqs_image *image, char **message)
 		    loff = dbgr_field_offset( dreq_type, (char *)"datatype" );
 		    i_info->req_datatype_offs = dev_offs + loff;
 		    match_offs = dbgr_field_offset( dreq_type, (char *)"match" );
-		    /*
-		      Current definition from the mpidpre.h file for ch3.
-
-		      typedef struct MPIDI_Message_match_parts {
-		      int32_t tag;
-		      MPIR_Rank_t rank;
-		      MPIR_Context_id_t context_id;
-		      } MPIDI_Message_match_parts_t;
-		      typedef union {
-		      MPIDI_Message_match_parts_t parts;
-		      MPIR_Upint whole;
-		      } MPIDI_Message_match;
-		    */
 		    if (match_offs >= 0) {
 			mqs_type *match_type = dbgr_find_type( image, (char *)"MPIDI_Message_match", mqs_lang_c );
 			if (match_type) {
@@ -961,7 +943,7 @@ static int rebuild_communicator_list (mqs_process *proc)
 	int send_ctx = fetch_int16 (proc, comm_base+i_info->comm_context_id_offs, p_info);
 	communicator_t *old = find_communicator (p_info, comm_base, recv_ctx);
 
-	char *name = (char *)"--unnamed--";
+	const char *name = "--unnamed--";
 	char namebuffer[64];
 	/* In MPICH, the name is preallocated and of size MPI_MAX_OBJECT_NAME */
 	if (dbgr_fetch_data( proc, comm_base+i_info->comm_name_offs,64,

@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Unpack  MPI_Unpack
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Unpack as PMPI_Unpack
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Unpack(const void *inbuf, int insize, int *position, void *outbuf, int outcount,
+               MPI_Datatype datatype, MPI_Comm comm) __attribute__((weak,alias("PMPI_Unpack")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,8 +29,8 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Unpack_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
-int MPIR_Unpack_impl(const void *inbuf, int insize, int *position,
+#define FCNAME MPL_QUOTE(FUNCNAME)
+int MPIR_Unpack_impl(const void *inbuf, MPI_Aint insize, MPI_Aint *position,
                      void *outbuf, int outcount, MPI_Datatype datatype)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -62,7 +65,7 @@ int MPIR_Unpack_impl(const void *inbuf, int insize, int *position,
 
     /* non-contig case */
     segp = MPID_Segment_alloc();
-    MPIU_ERR_CHKANDJUMP1(segp == NULL, mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "MPID_Segment_alloc");
+    MPIR_ERR_CHKANDJUMP1(segp == NULL, mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "MPID_Segment_alloc");
     mpi_errno = MPID_Segment_init(outbuf, outcount, datatype, segp, 0);
     MPIU_Assert(mpi_errno == MPI_SUCCESS);
 
@@ -73,7 +76,7 @@ int MPIR_Unpack_impl(const void *inbuf, int insize, int *position,
     last  = SEGMENT_IGNORE_LAST;
 
     /* Ensure that pointer increment fits in a pointer */
-    MPID_Ensure_Aint_fits_in_pointer((MPI_VOID_PTR_CAST_TO_MPI_AINT inbuf) +
+    MPIU_Ensure_Aint_fits_in_pointer((MPIU_VOID_PTR_CAST_TO_MPI_AINT inbuf) +
 				     (MPI_Aint) *position);
 
     MPID_Segment_unpack(segp,
@@ -82,7 +85,7 @@ int MPIR_Unpack_impl(const void *inbuf, int insize, int *position,
 			(void *) ((char *) inbuf + *position));
 
     /* Ensure that calculation fits into an int datatype. */
-    MPID_Ensure_Aint_fits_in_int((MPI_Aint)*position + last);
+    MPIU_Ensure_Aint_fits_in_int((MPI_Aint)*position + last);
 
     *position = (int)((MPI_Aint)*position + last);
 
@@ -101,7 +104,7 @@ int MPIR_Unpack_impl(const void *inbuf, int insize, int *position,
 #undef FUNCNAME
 #define FUNCNAME MPI_Unpack
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
     MPI_Unpack - Unpack a buffer according to a datatype into contiguous memory
 
@@ -137,6 +140,7 @@ int MPI_Unpack(const void *inbuf, int insize, int *position,
 	       MPI_Comm comm)
 {
     int mpi_errno = MPI_SUCCESS;
+    MPI_Aint position_x;
     MPID_Comm *comm_ptr = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_UNPACK);
 
@@ -171,7 +175,7 @@ int MPI_Unpack(const void *inbuf, int insize, int *position,
 	    MPIR_ERRTEST_COUNT(outcount, mpi_errno);
 
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr(comm_ptr, mpi_errno);
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
 	    if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 	    /* If comm_ptr is not valid, it will be reset to null */
 
@@ -193,8 +197,10 @@ int MPI_Unpack(const void *inbuf, int insize, int *position,
 
     /* ... body of routine ...  */
     
-    mpi_errno = MPIR_Unpack_impl(inbuf, insize, position, outbuf, outcount, datatype);
+    position_x = *position;
+    mpi_errno = MPIR_Unpack_impl(inbuf, insize, &position_x, outbuf, outcount, datatype);
     if (mpi_errno) goto fn_fail;
+    MPIU_Assign_trunc(*position, position_x, int);
     
     /* ... end of body of routine ... */
 

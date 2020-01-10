@@ -4,6 +4,33 @@
  *      See COPYRIGHT in top-level directory.
  */
 
+/*
+=== BEGIN_MPI_T_CVAR_INFO_BLOCK ===
+
+categories:
+    - name        : MEMORY
+      description : affects memory allocation and usage, including MPI object handles
+
+cvars:
+    - name        : MPIR_CVAR_ABORT_ON_LEAKED_HANDLES
+      category    : MEMORY
+      type        : boolean
+      default     : false
+      class       : device
+      verbosity   : MPI_T_VERBOSITY_USER_BASIC
+      scope       : MPI_T_SCOPE_ALL_EQ
+      description : >-
+        If true, MPI will call MPI_Abort at MPI_Finalize if any MPI object
+        handles have been leaked.  For example, if MPI_Comm_dup is called
+        without calling a corresponding MPI_Comm_free.  For uninteresting
+        reasons, enabling this option may prevent all known object leaks from
+        being reported.  MPICH must have been configure with
+        "--enable-g=handlealloc" or better in order for this functionality to
+        work.
+
+=== END_MPI_T_CVAR_INFO_BLOCK ===
+*/
+
 #include "mpiimpl.h"
 #include <stdio.h>
 
@@ -132,7 +159,7 @@ static int MPIU_Handle_free( void *((*indirect)[]), int indirect_size )
     do {                                                                                         \
         if (MPL_VG_RUNNING_ON_VALGRIND()) {                                                     \
             char desc_str[256];                                                                  \
-            MPIU_Snprintf(desc_str, sizeof(desc_str)-1,                                          \
+            MPL_snprintf(desc_str, sizeof(desc_str)-1,                                          \
                           "[MPICH handle: objptr=%p handle=0x%x %s/%s]",                        \
                           (objptr_), (objptr_)->handle,                                          \
                           ((is_direct_) ? "DIRECT" : "INDIRECT"),                                \
@@ -157,7 +184,9 @@ void *MPIU_Handle_direct_init(void *direct,
 
     for (i=0; i<direct_size; i++) {
 	/* printf( "Adding %p in %d\n", ptr, handle_type ); */
-	hptr = (MPIU_Handle_common *)ptr;
+        /* First cast to (void*) to avoid false warnings about alignment
+           (consider that a requirement of the input parameters) */
+	hptr = (MPIU_Handle_common *)(void *)ptr;
 	ptr  = ptr + obj_size;
 	hptr->next = ptr;
 	hptr->handle = ((unsigned)HANDLE_KIND_DIRECT << HANDLE_KIND_SHIFT) | 
@@ -209,7 +238,8 @@ static void *MPIU_Handle_indirect_init( void *(**indirect)[],
     }
     ptr = (char *)block_ptr;
     for (i=0; i<indirect_num_indices; i++) {
-	hptr       = (MPIU_Handle_common *)ptr;
+        /* Cast to (void*) to avoid false warning about alignment */
+	hptr       = (MPIU_Handle_common *)(void*)ptr;
 	ptr        = ptr + obj_size;
 	hptr->next = ptr;
 	hptr->handle   = ((unsigned)HANDLE_KIND_INDIRECT << HANDLE_KIND_SHIFT) | 
@@ -292,7 +322,7 @@ Input Parameters:
   MPI_Requests) and should not call any other routines in the common
   case.
 
-  Threading: The 'MPIU_THREAD_CS_ENTER/EXIT(HANDLEALLOC,)' enables both 
+  Threading: The 'MPID_THREAD_CS_ENTER/EXIT(POBJ, MPIR_THREAD_POBJ_HANDLE_MUTEX)' enables both 
   finer-grain
   locking with a single global mutex and with a mutex specific for handles.
 
@@ -300,20 +330,20 @@ Input Parameters:
 #undef FUNCNAME
 #define FUNCNAME MPIU_Handle_obj_alloc
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void *MPIU_Handle_obj_alloc(MPIU_Object_alloc_t *objmem)
 {
     void *ret;
-    MPIU_THREAD_CS_ENTER(HANDLEALLOC,);
+    MPID_THREAD_CS_ENTER(POBJ, MPIR_THREAD_POBJ_HANDLE_MUTEX);
     ret = MPIU_Handle_obj_alloc_unsafe(objmem);
-    MPIU_THREAD_CS_EXIT(HANDLEALLOC,);
+    MPID_THREAD_CS_EXIT(POBJ, MPIR_THREAD_POBJ_HANDLE_MUTEX);
     return ret;
 }
 
 #undef FUNCNAME
 #define FUNCNAME MPIU_Handle_obj_alloc_unsafe
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void *MPIU_Handle_obj_alloc_unsafe(MPIU_Object_alloc_t *objmem)
 {
     MPIU_Handle_common *ptr;
@@ -406,9 +436,6 @@ void *MPIU_Handle_obj_alloc_unsafe(MPIU_Object_alloc_t *objmem)
          * annotations instead. */
         MPL_VG_ANNOTATE_NEW_MEMORY(ptr, objmem->size);
 
-        /* must come after NEW_MEMORY annotation above to avoid problems */
-        MPIU_THREAD_MPI_OBJ_INIT(ptr);
-
         MPIU_DBG_MSG_FMT(HANDLE,TYPICAL,(MPIU_DBG_FDEST,
                                          "Allocating object ptr %p (handle val 0x%08x)",
                                          ptr, ptr->handle));
@@ -432,7 +459,7 @@ void MPIU_Handle_obj_free( MPIU_Object_alloc_t *objmem, void *object )
 {
     MPIU_Handle_common *obj = (MPIU_Handle_common *)object;
 
-    MPIU_THREAD_CS_ENTER(HANDLEALLOC,);
+    MPID_THREAD_CS_ENTER(POBJ, MPIR_THREAD_POBJ_HANDLE_MUTEX);
 
     MPIU_DBG_MSG_FMT(HANDLE,TYPICAL,(MPIU_DBG_FDEST,
                                      "Freeing object ptr %p (0x%08x kind=%s) refcount=%d",
@@ -440,8 +467,6 @@ void MPIU_Handle_obj_free( MPIU_Object_alloc_t *objmem, void *object )
                                      (obj)->handle,
                                      MPIU_Handle_get_kind_str(HANDLE_GET_MPI_KIND((obj)->handle)),
                                      MPIU_Object_get_ref(obj)));
-
-    MPIU_THREAD_MPI_OBJ_FINALIZE(obj);
 
 #ifdef USE_MEMORY_TRACING
     {
@@ -477,7 +502,7 @@ void MPIU_Handle_obj_free( MPIU_Object_alloc_t *objmem, void *object )
 
     obj->next	        = objmem->avail;
     objmem->avail	= obj;
-    MPIU_THREAD_CS_EXIT(HANDLEALLOC,);
+    MPID_THREAD_CS_EXIT(POBJ, MPIR_THREAD_POBJ_HANDLE_MUTEX);
 }
 
 /* 
@@ -644,7 +669,7 @@ static int MPIU_CheckHandlesOnFinalize( void *objmem_ptr )
 	MPIU_Free( nIndirect );
     }
 
-    if (leaked_handles && MPIR_PARAM_ABORT_ON_LEAKED_HANDLES) {
+    if (leaked_handles && MPIR_CVAR_ABORT_ON_LEAKED_HANDLES) {
         /* comm_world has been (or should have been) destroyed by this point,
          * pass comm=NULL */
         MPID_Abort(NULL, MPI_ERR_OTHER, 1, "ERROR: leaked handles detected, aborting");

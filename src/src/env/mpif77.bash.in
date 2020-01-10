@@ -29,20 +29,17 @@
 #
 # Directory locations: Fixed for any MPI implementation.
 # Set from the directory arguments to configure (e.g., --prefix=/usr/local)
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-sysconfdir=@sysconfdir@
-includedir=@includedir@
-libdir=@libdir@
+prefix=__PREFIX_TO_BE_FILLED_AT_INSTALL_TIME__
+exec_prefix=__EXEC_PREFIX_TO_BE_FILLED_AT_INSTALL_TIME__
+sysconfdir=__SYSCONFDIR_TO_BE_FILLED_AT_INSTALL_TIME__
+includedir=__INCLUDEDIR_TO_BE_FILLED_AT_INSTALL_TIME__
+libdir=__LIBDIR_TO_BE_FILLED_AT_INSTALL_TIME__
 
 # Default settings for compiler, flags, and libraries
 # Determined by a combination of environment variables and tests within
 # configure (e.g., determining whehter -lsocket is needee)
 F77="@F77@"
 F77CPP="@F77CPP@"
-FFLAGS="@WRAPPER_FFLAGS@"
-LDFLAGS="@WRAPPER_LDFLAGS@"
-LIBS="@WRAPPER_LIBS@ @F77_OTHER_LIBS@"
 MPICH_VERSION="@MPICH_VERSION@"
 
 enable_wrapper_rpath="@enable_wrapper_rpath@"
@@ -93,6 +90,7 @@ linking=yes
 allargs=("$@")
 argno=0
 cppflags=()
+interlib_deps=yes
 for arg in "$@" ; do
     # Set addarg to no if this arg should be ignored by the C compiler
     addarg=yes
@@ -106,6 +104,9 @@ for arg in "$@" ; do
 	# ----------------------------------------------------------------
 	# Options that control how we use mpif77 (e.g., -show, 
 	# -f77=* -config=*
+    -static)
+    interlib_deps=no
+    ;;
     -echo)
     addarg=no
     set -x
@@ -242,13 +243,17 @@ fi
 # Derived variables.  These are assembled from variables set from the
 # default, environment, configuration file (if any) and command-line
 # options (if any)
-mpilibs="@LPMPILIBNAME@ -l@MPILIBNAME@"
+f77libs=
+if [ "@MPIFCLIBNAME@" != "@MPILIBNAME@" ] ; then
+    f77libs="-l@MPIFCLIBNAME@"
+fi
 
+PROFILE_FOO=
 # Handle the case of a profile switch
 if [ -n "$profConf" ] ; then
     profConffile=
     if [ -s "$libdir/lib$profConf.a" -o -s "$libdir/lib$profConf.so" ] ; then
-	mpilibs="-l$profConf $mpilibs"
+	PROFILE_FOO="-l$profConf"
     elif [ -s "$sysconfdir/$profConf.conf" ] ; then
 	profConffile="$sysconfdir/$profConf.conf"
     elif [ -s "$profConf.conf" ] ; then
@@ -258,18 +263,17 @@ if [ -n "$profConf" ] ; then
     fi
     if [ -n "$profConffile" -a -s "$profConffile" ] ; then
 	. $profConffile
-	if [ -n "$PROFILE_INCPATHS" ] ; then
-	    FFLAGS="$PROFILE_INCPATHS $FFLAGS"
-        fi
-        if [ -n "$PROFILE_PRELIB" ] ; then
-	    mpilibs="$PROFILE_PRELIB $mpilibs"
-        fi
-        if [ -n "$PROFILE_POSTLIB" ] ; then
-	    mpilibs="$mpilibs $PROFILE_POSTLIB"
-        fi
     fi
 fi
-#
+
+final_fflags="@MPICH_MPIF77_FFLAGS@ @WRAPPER_FFLAGS@"
+final_ldflags="@MPICH_MPIF77_LDFLAGS@ @WRAPPER_LDFLAGS@"
+final_libs="@MPICH_MPIF77_LIBS@"
+if test "@INTERLIB_DEPS@" = "no" -o "${interlib_deps}" = "no" ; then
+    final_ldflags="${final_ldflags} @LDFLAGS@"
+    final_libs="${final_libs} @LIBS@ @WRAPPER_LIBS@"
+fi
+
 # A temporary statement to invoke the compiler
 # Place the -L before any args incase there are any mpi libraries in there.
 # Eventually, we'll want to move this after any non-MPI implementation 
@@ -282,28 +286,20 @@ if [ "$linking" = yes ] ; then
     # TODO configure and config.rpath are computing more sophisticated rpath
     # schemes than this simple one.  Consider updating this logic accordingly.
     if test "X$enable_wrapper_rpath" = "Xyes" ; then
-        # prepend the path for the shared libraries to the library list
-        eval mpilibs=\"${hardcode_libdir_flag_spec} \$mpilibs\"
+        eval rpath_flags=\"${hardcode_libdir_flag_spec}\"
+    else
+	rpath_flags=""
     fi
 
-    path_list=""
-    for path in "-L$libdir" ; do
-	found_path=0
-	for p in $path_list ; do
-	    if [ "$path" = "$p" ] ; then found_path=1 ; break ; fi
-	done
-	if [ "$found_path" = "0" ] ; then path_list="$path_list $path" ; fi
-    done
-
     if [ "$nativelinking" = yes ] ; then
-        $Show $F77 $FFLAGS $LDFLAGS "${allargs[@]}" -I$includedir
+        $Show $F77 $PROFILE_INCPATHS ${final_fflags} ${final_ldflags} "${allargs[@]}" -I$includedir
         rc=$?
     else
-        $Show $F77 $FFLAGS $LDFLAGS "${allargs[@]}" -I$includedir ${path_list} $mpilibs $LIBS
+        $Show $F77 $PROFILE_INCPATHS ${final_fflags} ${final_ldflags} "${allargs[@]}" -I$includedir -L$libdir $f77libs $PROFILE_PRELIB $PROFILE_FOO $rpath_flags -l@MPILIBNAME@ @LPMPILIBNAME@ $PROFILE_POSTLIB ${final_libs} @F77_OTHER_LIBS@
         rc=$?
     fi
 else
-    $Show $F77 $FFLAGS "${allargs[@]}" -I$includedir
+    $Show $F77 $PROFILE_INCPATHS ${final_fflags} "${allargs[@]}" -I$includedir
     rc=$?
 fi
 if [ -n "$rmfiles" ] ; then

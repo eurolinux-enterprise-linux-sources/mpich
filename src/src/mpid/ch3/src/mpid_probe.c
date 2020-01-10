@@ -9,7 +9,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPID_Probe
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPID_Probe(int source, int tag, MPID_Comm * comm, int context_offset, 
 	       MPI_Status * status)
 {
@@ -26,6 +26,13 @@ int MPID_Probe(int source, int tag, MPID_Comm * comm, int context_offset,
 	goto fn_exit;
     }
 
+    /* Check to make sure the communicator hasn't already been revoked */
+    if (comm->revoked &&
+            MPIR_AGREE_TAG != MPIR_TAG_MASK_ERROR_BITS(tag & ~MPIR_Process.tagged_coll_mask) &&
+            MPIR_SHRINK_TAG != MPIR_TAG_MASK_ERROR_BITS(tag & ~MPIR_Process.tagged_coll_mask)) {
+        MPIR_ERR_SETANDJUMP(mpi_errno,MPIX_ERR_REVOKED,"**revoked");
+    }
+
 #ifdef ENABLE_COMM_OVERRIDES
     if (MPIDI_Anysource_iprobe_fn) {
         if (source == MPI_ANY_SOURCE) {
@@ -35,19 +42,19 @@ int MPID_Probe(int source, int tag, MPID_Comm * comm, int context_offset,
             do {
                 int found;
                 
-                MPIU_THREAD_CS_ENTER(MSGQUEUE,);
+                MPID_THREAD_CS_ENTER(POBJ, MPIR_THREAD_POBJ_MSGQ_MUTEX);
                 found = MPIDI_CH3U_Recvq_FU(source, tag, context, status);
-                MPIU_THREAD_CS_EXIT(MSGQUEUE,);
+                MPID_THREAD_CS_EXIT(POBJ, MPIR_THREAD_POBJ_MSGQ_MUTEX);
                 if (found) goto fn_exit;
 
                 mpi_errno = MPIDI_Anysource_iprobe_fn(tag, comm, context_offset, &found, status);
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
                 if (found) goto fn_exit;
 
-                MPIU_THREAD_CS_YIELD(ALLFUNC,);
+                MPID_THREAD_CS_YIELD(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
                 
                 mpi_errno = MPIDI_CH3_Progress_test();
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
             } while (1);
         } else {
             /* it's not anysource, see if this is for the netmod */
@@ -61,13 +68,13 @@ int MPID_Probe(int source, int tag, MPID_Comm * comm, int context_offset,
                     
                     mpi_errno = vc->comm_ops->iprobe(vc, source, tag, comm, context_offset, &found,
                                                      status);
-                    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
                     if (found) goto fn_exit;
                     
-                    MPIU_THREAD_CS_YIELD(ALLFUNC,);
+                    MPID_THREAD_CS_YIELD(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
                     
                     mpi_errno = MPIDI_CH3_Progress_test();
-                    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
                 } while (1);
             }
             /* fall-through to shm case */
@@ -79,9 +86,9 @@ int MPID_Probe(int source, int tag, MPID_Comm * comm, int context_offset,
     {
         int found;
 
-        MPIU_THREAD_CS_ENTER(MSGQUEUE,);
+        MPID_THREAD_CS_ENTER(POBJ, MPIR_THREAD_POBJ_MSGQ_MUTEX);
         found = MPIDI_CH3U_Recvq_FU(source, tag, context, status);
-        MPIU_THREAD_CS_EXIT(MSGQUEUE,);
+        MPID_THREAD_CS_EXIT(POBJ, MPIR_THREAD_POBJ_MSGQ_MUTEX);
         if (found) break;
 
 	mpi_errno = MPIDI_CH3_Progress_wait(&progress_state);

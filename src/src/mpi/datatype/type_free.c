@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_free  MPI_Type_free
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_free as PMPI_Type_free
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_free(MPI_Datatype *datatype) __attribute__((weak,alias("PMPI_Type_free")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,7 +28,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Type_free_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_Type_free_impl(MPI_Datatype *datatype)
 {
     MPID_Datatype *datatype_ptr = NULL;
@@ -41,7 +43,7 @@ void MPIR_Type_free_impl(MPI_Datatype *datatype)
 #undef FUNCNAME
 #define FUNCNAME MPI_Type_free
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
     MPI_Type_free - Frees the datatype
 
@@ -71,12 +73,11 @@ it clear that it is an error to free a null datatype.
 int MPI_Type_free(MPI_Datatype *datatype)
 {
     int mpi_errno = MPI_SUCCESS;
-    MPID_Datatype *datatype_ptr = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_FREE);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_FREE);
     
     /* Validate parameters, especially handles needing to be converted */
@@ -91,14 +92,13 @@ int MPI_Type_free(MPI_Datatype *datatype)
     }
 #   endif
     
-    /* Validate parameters, especially handles needing to be converted */
-    MPID_Datatype_get_ptr( *datatype, datatype_ptr );
-    
     /* Convert MPI object handles to object pointers */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
 	    /* Check for built-in type */
 	    if (HANDLE_GET_KIND(*datatype) == HANDLE_KIND_BUILTIN) {
 		mpi_errno = MPIR_Err_create_code(MPI_SUCCESS,
@@ -125,6 +125,9 @@ int MPI_Type_free(MPI_Datatype *datatype)
 						  "**dtypeperm", 0);
 		goto fn_fail;
 	    }
+            /* Validate parameters, especially handles needing to be converted */
+            MPID_Datatype_get_ptr( *datatype, datatype_ptr );
+
             /* Validate datatype_ptr */
             MPID_Datatype_valid_ptr(datatype_ptr, mpi_errno);
             if (mpi_errno) goto fn_fail;
@@ -143,7 +146,7 @@ int MPI_Type_free(MPI_Datatype *datatype)
   fn_exit:
 #endif
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_FREE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
     /* --BEGIN ERROR HANDLING-- */

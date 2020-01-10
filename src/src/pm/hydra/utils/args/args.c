@@ -140,12 +140,11 @@ static HYD_status match_arg(char ***argv_p, struct HYD_arg_match_table *match_ta
             if (**argv_p && (!strcmp(**argv_p, "-h") || !strcmp(**argv_p, "-help") ||
                              !strcmp(**argv_p, "--help"))) {
                 if (m->help_fn == NULL) {
-                    HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR,
-                                        "No help message available\n");
+                    HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "No help message available\n");
                 }
                 else {
                     m->help_fn();
-                    HYDU_ERR_SETANDJUMP(status, HYD_GRACEFUL_ABORT, "");
+                    HYDU_ERR_SETANDJUMP(status, HYD_GRACEFUL_ABORT, "%s", "");
                 }
             }
 
@@ -207,8 +206,7 @@ HYD_status HYDU_set_int(char *arg, int *var, int val)
 {
     HYD_status status = HYD_SUCCESS;
 
-    HYDU_ERR_CHKANDJUMP(status, *var != -1, HYD_INTERNAL_ERROR,
-                        "duplicate setting: %s\n", arg);
+    HYDU_ERR_CHKANDJUMP(status, *var != -1, HYD_INTERNAL_ERROR, "duplicate setting: %s\n", arg);
 
     *var = val;
 
@@ -260,22 +258,22 @@ char *HYDU_getcwd(void)
 HYD_status HYDU_process_mfile_token(char *token, int newline, struct HYD_node **node_list)
 {
     int num_procs;
-    char *hostname, *procs, *binding, *tmp, *user;
+    char *hostname, *procs, *binding, *tmp, *user, *saveptr;
     struct HYD_node *node;
     HYD_status status = HYD_SUCCESS;
 
     if (newline) {      /* The first entry gives the hostname and processes */
-        hostname = strtok(token, ":");
-        procs = strtok(NULL, ":");
+        hostname = strtok_r(token, ":", &saveptr);
+        procs = strtok_r(NULL, ":", &saveptr);
         num_procs = procs ? atoi(procs) : 1;
 
         status = HYDU_add_to_node_list(hostname, num_procs, node_list);
         HYDU_ERR_POP(status, "unable to add to node list\n");
     }
     else {      /* Not a new line */
-        tmp = strtok(token, "=");
+        tmp = strtok_r(token, "=", &saveptr);
         if (!strcmp(tmp, "binding")) {
-            binding = strtok(NULL, "=");
+            binding = strtok_r(NULL, "=", &saveptr);
 
             for (node = *node_list; node->next; node = node->next);
             if (node->local_binding)
@@ -285,12 +283,11 @@ HYD_status HYDU_process_mfile_token(char *token, int newline, struct HYD_node **
             node->local_binding = HYDU_strdup(binding);
         }
         else if (!strcmp(tmp, "user")) {
-            user = strtok(NULL, "=");
+            user = strtok_r(NULL, "=", &saveptr);
 
             for (node = *node_list; node->next; node = node->next);
             if (node->user)
-                HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR,
-                                    "duplicate username setting\n");
+                HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "duplicate username setting\n");
 
             node->user = HYDU_strdup(user);
         }
@@ -319,8 +316,7 @@ HYD_status HYDU_parse_hostfile(const char *hostfile, struct HYD_node **node_list
     HYDU_FUNC_ENTER();
 
     if ((fp = fopen(hostfile, "r")) == NULL)
-        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR,
-                            "unable to open host file: %s\n", hostfile);
+        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "unable to open host file: %s\n", hostfile);
 
     if (node_list)
         *node_list = NULL;
@@ -402,8 +398,7 @@ HYD_status HYDU_send_strlist(int fd, char **strlist)
 
     /* Check how many arguments we have */
     list_len = HYDU_strlist_lastidx(strlist);
-    status =
-        HYDU_sock_write(fd, &list_len, sizeof(int), &sent, &closed, HYDU_SOCK_COMM_MSGWAIT);
+    status = HYDU_sock_write(fd, &list_len, sizeof(int), &sent, &closed, HYDU_SOCK_COMM_MSGWAIT);
     HYDU_ERR_POP(status, "unable to write data to proxy\n");
     HYDU_ASSERT(!closed, status);
 
@@ -411,8 +406,7 @@ HYD_status HYDU_send_strlist(int fd, char **strlist)
     for (i = 0; strlist[i]; i++) {
         len = strlen(strlist[i]) + 1;
 
-        status =
-            HYDU_sock_write(fd, &len, sizeof(int), &sent, &closed, HYDU_SOCK_COMM_MSGWAIT);
+        status = HYDU_sock_write(fd, &len, sizeof(int), &sent, &closed, HYDU_SOCK_COMM_MSGWAIT);
         HYDU_ERR_POP(status, "unable to write data to proxy\n");
         HYDU_ASSERT(!closed, status);
 

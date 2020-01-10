@@ -13,6 +13,11 @@
 #pragma _HP_SECONDARY_DEF PMPI_Iscatterv  MPI_Iscatterv
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Iscatterv as PMPI_Iscatterv
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs[],
+                  MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                  int root, MPI_Comm comm, MPI_Request *request)
+                  __attribute__((weak,alias("PMPI_Iscatterv")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -44,7 +49,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Iscatterv
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs[],
                    MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype,
                    int root, MPID_Comm *comm_ptr, MPID_Sched_t s)
@@ -72,7 +77,7 @@ int MPIR_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs
          * a minimal sanity check. Maybe add a global var since we do
          * loop over sendcount[] in MPI_Scatterv before calling
          * this? */
-        MPID_Ensure_Aint_fits_in_pointer(MPI_VOID_PTR_CAST_TO_MPI_AINT sendbuf + extent);
+        MPIU_Ensure_Aint_fits_in_pointer(MPIU_VOID_PTR_CAST_TO_MPI_AINT sendbuf + extent);
 
         for (i = 0; i < comm_size; i++) {
             if (sendcounts[i]) {
@@ -81,13 +86,13 @@ int MPIR_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs
                         mpi_errno = MPID_Sched_copy(((char *)sendbuf+displs[rank]*extent),
                                                     sendcounts[rank], sendtype,
                                                     recvbuf, recvcount, recvtype, s);
-                        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
                     }
                 }
                 else {
                     mpi_errno = MPID_Sched_send(((char *)sendbuf+displs[i]*extent),
                                                 sendcounts[i], sendtype, i, comm_ptr, s);
-                    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
                 }
             }
         }
@@ -97,7 +102,7 @@ int MPIR_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs
         /* non-root nodes, and in the intercomm. case, non-root nodes on remote side */
         if (recvcount) {
             mpi_errno = MPID_Sched_recv(recvbuf, recvcount, recvtype, root, comm_ptr, s);
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
         }
     }
 
@@ -110,32 +115,45 @@ fn_fail:
 #undef FUNCNAME
 #define FUNCNAME MPIR_Iscatterv_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Iscatterv_impl(const void *sendbuf, const int sendcounts[], const int displs[],
                         MPI_Datatype sendtype, void *recvbuf, int recvcount,
                         MPI_Datatype recvtype, int root, MPID_Comm *comm_ptr, MPI_Request *request)
 {
     int mpi_errno = MPI_SUCCESS;
-    int tag = -1;
     MPID_Request *reqp = NULL;
+    int tag = -1;
     MPID_Sched_t s = MPID_SCHED_NULL;
 
     *request = MPI_REQUEST_NULL;
 
-    mpi_errno = MPID_Sched_next_tag(comm_ptr, &tag);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
-    mpi_errno = MPID_Sched_create(&s);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
-
     MPIU_Assert(comm_ptr->coll_fns != NULL);
-    MPIU_Assert(comm_ptr->coll_fns->Iscatterv != NULL);
-    mpi_errno = comm_ptr->coll_fns->Iscatterv(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, comm_ptr, s);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (comm_ptr->coll_fns->Iscatterv_req != NULL) {
+        /* --BEGIN USEREXTENSION-- */
+        mpi_errno = comm_ptr->coll_fns->Iscatterv_req(sendbuf, sendcounts, displs, sendtype,
+                                                           recvbuf, recvcount, recvtype,
+                                                           root, comm_ptr, &reqp);
+        if (reqp) {
+            *request = reqp->handle;
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
+            goto fn_exit;
+        }
+        /* --END USEREXTENSION-- */
+    }
+
+    mpi_errno = MPID_Sched_next_tag(comm_ptr, &tag);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
+    mpi_errno = MPID_Sched_create(&s);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
+
+    MPIU_Assert(comm_ptr->coll_fns->Iscatterv_sched != NULL);
+    mpi_errno = comm_ptr->coll_fns->Iscatterv_sched(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, comm_ptr, s);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     mpi_errno = MPID_Sched_start(&s, comm_ptr, tag, &reqp);
     if (reqp)
         *request = reqp->handle;
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 fn_exit:
     return mpi_errno;
@@ -148,9 +166,10 @@ fn_fail:
 #undef FUNCNAME
 #define FUNCNAME MPI_Iscatterv
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
-MPI_Iscatterv - XXX description here
+MPI_Iscatterv - Scatters a buffer in parts to all processes in a communicator
+                in a nonblocking way
 
 Input Parameters:
 + sendbuf - address of send buffer (significant only at root) (choice)
@@ -180,7 +199,7 @@ int MPI_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs[
     MPID_Comm *comm_ptr = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_ISCATTERV);
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_ISCATTERV);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -210,7 +229,7 @@ int MPI_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs[
             MPID_Datatype *sendtype_ptr=NULL, *recvtype_ptr=NULL;
             int i, comm_size, rank;
 
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
             if (comm_ptr->comm_kind == MPID_INTRACOMM) {
@@ -242,6 +261,13 @@ int MPI_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs[
                             break;
                         }
                     }
+                    /* catch common aliasing cases */
+                    if (recvbuf != MPI_IN_PLACE && sendtype == recvtype && sendcounts[comm_ptr->rank] != 0 && recvcount != 0) {
+                        int sendtype_size;
+                        MPID_Datatype_get_size_macro(sendtype, sendtype_size);
+                        MPIR_ERRTEST_ALIAS_COLL(recvbuf, (char*)sendbuf + displs[comm_ptr->rank]*sendtype_size, mpi_errno);
+                    }
+
                 }
                 else
                     MPIR_ERRTEST_RECVBUF_INPLACE(recvbuf, recvcount, mpi_errno);
@@ -307,13 +333,13 @@ int MPI_Iscatterv(const void *sendbuf, const int sendcounts[], const int displs[
     /* ... body of routine ...  */
 
     mpi_errno = MPIR_Iscatterv_impl(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, comm_ptr, request);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* ... end of body of routine ... */
 
 fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_ISCATTERV);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
 fn_fail:

@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Win_get_group  MPI_Win_get_group
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Win_get_group as PMPI_Win_get_group
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Win_get_group(MPI_Win win, MPI_Group *group) __attribute__((weak,alias("PMPI_Win_get_group")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -64,7 +66,7 @@ int MPI_Win_get_group(MPI_Win win, MPI_Group *group)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_RMA_FUNC_ENTER(MPID_STATE_MPI_WIN_GET_GROUP);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -108,7 +110,7 @@ int MPI_Win_get_group(MPI_Win win, MPI_Group *group)
 
   fn_exit:
     MPID_MPI_RMA_FUNC_EXIT(MPID_STATE_MPI_WIN_GET_GROUP);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

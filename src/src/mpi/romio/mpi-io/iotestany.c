@@ -32,9 +32,9 @@ int MPIO_Testany(int count, MPIO_Request requests[], int *index,
 		 int *flag, MPI_Status *status)
 {
     int i, err; 
-    MPIU_THREADPRIV_DECL;
+    MPID_THREADPRIV_DECL;
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     if (count == 1) {
 	err = MPIO_Test( requests, flag, status );
@@ -55,8 +55,8 @@ int MPIO_Testany(int count, MPIO_Request requests[], int *index,
 	if (status != MPI_STATUS_IGNORE) {
 	    status->MPI_SOURCE = MPI_ANY_SOURCE;
 	    status->MPI_TAG    = MPI_ANY_TAG;
-	    status->count      = 0;
-	    status->cancelled  = 0;
+            MPIR_STATUS_SET_COUNT(*status, 0);
+            MPIR_STATUS_SET_CANCEL_BIT(*status, 0);
 	}
 #endif
 	err = MPI_SUCCESS;
@@ -76,6 +76,6 @@ int MPIO_Testany(int count, MPIO_Request requests[], int *index,
 
 
 fn_exit:
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
     return err;
 }

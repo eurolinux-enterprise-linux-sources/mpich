@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Recv  MPI_Recv
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Recv as PMPI_Recv
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+             MPI_Comm comm, MPI_Status *status) __attribute__((weak,alias("PMPI_Recv")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -72,7 +75,7 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER_BACK(MPID_STATE_MPI_RECV);
     
     /* Validate handle parameters needing to be converted */
@@ -97,7 +100,7 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 	    
 	    MPIR_ERRTEST_COUNT(count, mpi_errno);
@@ -159,6 +162,19 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
 		goto fn_fail;
 		/* --END ERROR HANDLING-- */
 	    }
+
+            if (unlikely(MPIR_CVAR_ENABLE_FT &&
+                        !MPID_Request_is_complete(request_ptr) &&
+                        MPID_Request_is_anysource(request_ptr) &&
+                        !MPID_Comm_AS_enabled(request_ptr->comm))) {
+                /* --BEGIN ERROR HANDLING-- */
+                MPID_Cancel_recv(request_ptr);
+                MPIR_STATUS_SET_CANCEL_BIT(request_ptr->status, FALSE);
+                MPIR_ERR_SET(request_ptr->status.MPI_ERROR, MPIX_ERR_PROC_FAILED, "**proc_failed");
+                mpi_errno = request_ptr->status.MPI_ERROR;
+                goto fn_fail;
+                /* --END ERROR HANDLING-- */
+            }
 	}
 	MPID_Progress_end(&progress_state);
     }
@@ -173,7 +189,7 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT_BACK(MPID_STATE_MPI_RECV);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

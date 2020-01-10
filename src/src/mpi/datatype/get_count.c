@@ -13,6 +13,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Get_count  MPI_Get_count
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Get_count as PMPI_Get_count
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count) __attribute__((weak,alias("PMPI_Get_count")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -25,21 +27,21 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Get_count_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_Get_count_impl(const MPI_Status *status, MPI_Datatype datatype, int *count)
 {
     MPI_Count size;
 
     MPID_Datatype_get_size_macro(datatype, size);
-    MPIU_Assert(size >= 0 && status->count >= 0);
+    MPIU_Assert(size >= 0 && MPIR_STATUS_GET_COUNT(*status) >= 0);
     if (size != 0) {
         /* MPI-3 says return MPI_UNDEFINED if too large for an int */
-	if ((status->count % size) != 0 || ((status->count / size) > INT_MAX))
+	if ((MPIR_STATUS_GET_COUNT(*status) % size) != 0 || ((MPIR_STATUS_GET_COUNT(*status) / size) > INT_MAX))
 	    (*count) = MPI_UNDEFINED;
 	else
-	    (*count) = (int)(status->count / size);
+	    (*count) = (int)(MPIR_STATUS_GET_COUNT(*status) / size);
     } else {
-	if (status->count > 0) {
+	if (MPIR_STATUS_GET_COUNT(*status) > 0) {
 	    /* --BEGIN ERROR HANDLING-- */
 
 	    /* case where datatype size is 0 and count is > 0 should
@@ -64,7 +66,7 @@ void MPIR_Get_count_impl(const MPI_Status *status, MPI_Datatype datatype, int *c
 #undef FUNCNAME
 #define FUNCNAME MPI_Get_count
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
   MPI_Get_count - Gets the number of "top level" elements
 

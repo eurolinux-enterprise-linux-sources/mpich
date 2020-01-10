@@ -1,7 +1,8 @@
-/* -*- mode: c; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
+/* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
 /*
- *  (c) 2012 by argonne national laboratory.
- *      see copyright in top-level directory.
+ *
+ *  (C) 2012 by Argonne National Laboratory.
+ *      See COPYRIGHT in top-level directory.
  */
 
 /* This test attempts to create a large number of communicators, in an effort
@@ -22,10 +23,11 @@
 
 static const int verbose = 0;
 
-int main(int argc, char **argv) {
-    int       rank, nproc, mpi_errno;
-    int       i, ncomm;
-    int       errors = 1;
+int main(int argc, char **argv)
+{
+    int rank, nproc, mpi_errno;
+    int i, ncomm;
+    int errors = 1;
     MPI_Comm *comm_hdls;
 
     MPI_Init(&argc, &argv);
@@ -43,8 +45,10 @@ int main(int argc, char **argv) {
 
         if (mpi_errno == MPI_SUCCESS) {
             ncomm++;
-        } else {
-            if (verbose) printf("%d: Error creating comm %d\n", rank, i);
+        }
+        else {
+            if (verbose)
+                printf("%d: Error creating comm %d\n", rank, i);
             errors = 0;
             break;
         }

@@ -40,8 +40,9 @@ int MPID_Type_indexed(int count,
 {
     int mpi_errno = MPI_SUCCESS;
     int is_builtin, old_is_contig;
-    int i, contig_count;
-    int el_sz, el_ct, old_ct, old_sz;
+    int i;
+    MPI_Aint contig_count;
+    MPI_Aint el_sz, el_ct, old_ct, old_sz;
     MPI_Aint old_lb, old_ub, old_extent, old_true_lb, old_true_ub;
     MPI_Aint min_lb = 0, max_ub = 0, eff_disp;
     MPI_Datatype el_type;
@@ -109,9 +110,9 @@ int MPID_Type_indexed(int count,
 	new_dtp->has_sticky_ub = 0;
 	new_dtp->has_sticky_lb = 0;
 
-	new_dtp->alignsize    = el_sz; /* ??? */
-	new_dtp->element_size = (MPI_Aint) el_sz;
-	new_dtp->eltype       = el_type;
+        MPIU_Assign_trunc(new_dtp->alignsize, el_sz, MPI_Aint);
+	new_dtp->builtin_element_size = el_sz;
+	new_dtp->basic_type       = el_type;
 
 	new_dtp->max_contig_blocks = count;
     }
@@ -122,13 +123,13 @@ int MPID_Type_indexed(int count,
 
 	MPID_Datatype_get_ptr(oldtype, old_dtp);
 
-	/* Ensure that "element_size" fits into an int datatype. */
-	MPID_Ensure_Aint_fits_in_int(old_dtp->element_size);
+	/* Ensure that "builtin_element_size" fits into an int datatype. */
+	MPIU_Ensure_Aint_fits_in_int(old_dtp->builtin_element_size);
 
-	el_sz   = old_dtp->element_size;
+	el_sz   = old_dtp->builtin_element_size;
 	old_sz  = old_dtp->size;
-	el_ct   = old_dtp->n_elements;
-	el_type = old_dtp->eltype;
+	el_ct   = old_dtp->n_builtin_elements;
+	el_type = old_dtp->basic_type;
 
 	old_lb        = old_dtp->lb;
 	old_true_lb   = old_dtp->true_lb;
@@ -139,8 +140,8 @@ int MPID_Type_indexed(int count,
 
 	new_dtp->has_sticky_lb = old_dtp->has_sticky_lb;
 	new_dtp->has_sticky_ub = old_dtp->has_sticky_ub;
-	new_dtp->element_size  = (MPI_Aint) el_sz;
-	new_dtp->eltype        = el_type;
+	new_dtp->builtin_element_size  = (MPI_Aint) el_sz;
+	new_dtp->basic_type        = el_type;
 
         new_dtp->max_contig_blocks = 0;
         for(i=0; i<count; i++)
@@ -206,7 +207,7 @@ int MPID_Type_indexed(int count,
     new_dtp->true_ub = max_ub + (old_true_ub - old_ub);
     new_dtp->extent  = max_ub - min_lb;
 
-    new_dtp->n_elements = old_ct * el_ct;
+    new_dtp->n_builtin_elements = old_ct * el_ct;
 
     /* new type is only contig for N types if it's all one big
      * block, its size and extent are the same, and the old type
@@ -215,8 +216,11 @@ int MPID_Type_indexed(int count,
     new_dtp->is_contig = 0;
     if(old_is_contig)
     {
+	MPI_Aint *blklens = MPIU_Malloc(count *sizeof(MPI_Aint));
+	for (i=0; i<count; i++)
+		blklens[i] = blocklength_array[i];
         contig_count = MPID_Type_indexed_count_contig(count,
-						  blocklength_array,
+						  blklens,
 						  displacement_array,
 						  dispinbytes,
 						  old_extent);
@@ -226,6 +230,7 @@ int MPID_Type_indexed(int count,
         {
             new_dtp->is_contig = 1;
         }
+	MPIU_Free(blklens);
     }
 
     *newtype = new_dtp->handle;

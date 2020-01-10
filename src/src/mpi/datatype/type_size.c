@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_size  MPI_Type_size
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_size as PMPI_Type_size
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_size(MPI_Datatype datatype, int *size) __attribute__((weak,alias("PMPI_Type_size")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -29,7 +31,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPI_Type_size
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
     MPI_Type_size - Return the number of bytes occupied by entries
                     in the datatype
@@ -52,7 +54,6 @@ Output Parameters:
 int MPI_Type_size(MPI_Datatype datatype, int *size)
 {
     int mpi_errno = MPI_SUCCESS;
-    MPID_Datatype *datatype_ptr = NULL;
     MPI_Count size_x = MPI_UNDEFINED;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_SIZE);
 
@@ -78,14 +79,16 @@ int MPI_Type_size(MPI_Datatype datatype, int *size)
 	goto fn_exit;
     }
 
-    /* Convert MPI object handles to object pointers */
-    MPID_Datatype_get_ptr( datatype, datatype_ptr );
-
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
+            /* Convert MPI object handles to object pointers */
+            MPID_Datatype_get_ptr( datatype, datatype_ptr );
+
             /* Validate datatype_ptr */
             MPID_Datatype_valid_ptr( datatype_ptr, mpi_errno );
             if (mpi_errno) goto fn_fail;
@@ -97,7 +100,7 @@ int MPI_Type_size(MPI_Datatype datatype, int *size)
     /* ... body of routine ...  */
 
     mpi_errno = MPIR_Type_size_x_impl(datatype, &size_x);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     MPIU_Assert(size_x >= 0);
     /* handle overflow: see MPI-3 p.104 */

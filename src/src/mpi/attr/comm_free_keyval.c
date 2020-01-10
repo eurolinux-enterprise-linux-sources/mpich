@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_free_keyval  MPI_Comm_free_keyval
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_free_keyval as PMPI_Comm_free_keyval
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_free_keyval(int *comm_keyval) __attribute__((weak,alias("PMPI_Comm_free_keyval")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Comm_free_keyval_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_Comm_free_keyval_impl(int keyval)
 {
     int in_use;
@@ -50,7 +52,7 @@ void MPIR_Comm_free_keyval_impl(int keyval)
 #undef FUNCNAME
 #define FUNCNAME MPI_Comm_free_keyval
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
    MPI_Comm_free_keyval - Frees an attribute key for communicators
 
@@ -71,13 +73,12 @@ Key values are global (they can be used with any and all communicators)
 @*/
 int MPI_Comm_free_keyval(int *comm_keyval)
 {
-    MPID_Keyval *keyval_ptr = NULL;
     int          mpi_errno = MPI_SUCCESS;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_COMM_FREE_KEYVAL);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_FREE_KEYVAL);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -93,14 +94,16 @@ int MPI_Comm_free_keyval(int *comm_keyval)
     }
 #   endif
 
-    /* Convert MPI object handles to object pointers */
-    MPID_Keyval_get_ptr( *comm_keyval, keyval_ptr );
-
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Keyval *keyval_ptr = NULL;
+
+            /* Convert MPI object handles to object pointers */
+            MPID_Keyval_get_ptr( *comm_keyval, keyval_ptr );
+
 	    MPID_Keyval_valid_ptr( keyval_ptr, mpi_errno );
             if (mpi_errno) goto fn_fail;
         }
@@ -119,7 +122,7 @@ int MPI_Comm_free_keyval(int *comm_keyval)
   fn_exit:
 #endif
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_FREE_KEYVAL);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
     /* --BEGIN ERROR HANDLING-- */

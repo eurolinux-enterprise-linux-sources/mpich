@@ -97,10 +97,19 @@ const char *MPIU_Handle_get_kind_str(int kind);
 #define HANDLE_BLOCK_INDEX(a) ((a) & 0x00000FFF)
 
 /* Number of blocks is between 1 and 16384 */
+#if defined MPID_HANDLE_NUM_BLOCKS
+#define HANDLE_NUM_BLOCKS MPID_HANDLE_NUM_BLOCKS
+#else
 #define HANDLE_NUM_BLOCKS 8192
+#endif /* MPID_HANDLE_NUM_BLOCKS */
+
 /* Number of objects in a block is bewtween 1 and 4096 (each obj has an index
  * within its block) */
+#if defined MPID_HANDLE_NUM_INDICES
+#define HANDLE_NUM_INDICES MPID_HANDLE_NUM_INDICES
+#else
 #define HANDLE_NUM_INDICES 1024
+#endif /* MPID_HANDLE_NUM_INDICES */
 
 /* For direct, the remainder of the handle is the index into a predefined 
    block */
@@ -235,40 +244,6 @@ typedef int MPIU_Handle_ref_count;
         MPIU_HANDLE_CHECK_REFCOUNT(objptr_,"decr");       \
     } while (0)
 
-#elif MPIU_THREAD_REFCOUNT == MPIU_REFCOUNT_LOCK
-
-typedef volatile int MPIU_Handle_ref_count;
-#define MPIU_HANDLE_REF_COUNT_INITIALIZER(val_) (val_)
-
-#define MPIU_Object_set_ref(objptr_,val)                 \
-    do {                                                 \
-        MPIU_THREAD_CS_ENTER(HANDLE,objptr_);            \
-        (objptr_)->ref_count = val;                      \
-        MPIU_HANDLE_LOG_REFCOUNT_CHANGE(objptr_, "set"); \
-        MPIU_THREAD_CS_EXIT(HANDLE,objptr_);             \
-    } while (0)
-
-/* must be used with care, since there is no synchronization for this read */
-#define MPIU_Object_get_ref(objptr_) \
-    ((objptr_)->ref_count)
-
-#define MPIU_Object_add_ref_always(objptr_)               \
-    do {                                                  \
-        MPIU_THREAD_CS_ENTER(HANDLE,objptr_);             \
-        (objptr_)->ref_count++;                           \
-        MPIU_HANDLE_LOG_REFCOUNT_CHANGE(objptr_, "incr"); \
-        MPIU_HANDLE_CHECK_REFCOUNT(objptr_,"incr");       \
-        MPIU_THREAD_CS_EXIT(HANDLE,objptr_);              \
-    } while (0)
-#define MPIU_Object_release_ref_always(objptr_,inuse_ptr) \
-    do {                                                  \
-        MPIU_THREAD_CS_ENTER(HANDLE,objptr_);             \
-        *(inuse_ptr) = --((objptr_)->ref_count);          \
-        MPIU_HANDLE_LOG_REFCOUNT_CHANGE(objptr_, "decr"); \
-        MPIU_HANDLE_CHECK_REFCOUNT(objptr_,"decr");       \
-        MPIU_THREAD_CS_EXIT(HANDLE,objptr_);              \
-    } while (0)
-
 #elif MPIU_THREAD_REFCOUNT == MPIU_REFCOUNT_LOCKFREE
 
 #include "opa_primitives.h"
@@ -320,7 +295,7 @@ typedef OPA_int_t MPIU_Handle_ref_count;
 #define MPIU_Object_add_ref(objptr_)                           \
     do {                                                       \
         int handle_kind_ = HANDLE_GET_KIND((objptr_)->handle); \
-        if (handle_kind_ != HANDLE_KIND_BUILTIN) {             \
+        if (unlikely(handle_kind_ != HANDLE_KIND_BUILTIN)) {   \
             MPIU_Object_add_ref_always((objptr_));             \
         }                                                      \
         else {                                                                                                 \
@@ -335,7 +310,7 @@ typedef OPA_int_t MPIU_Handle_ref_count;
 #define MPIU_Object_release_ref(objptr_,inuse_ptr_)                  \
     do {                                                             \
         int handle_kind_ = HANDLE_GET_KIND((objptr_)->handle);       \
-        if (handle_kind_ != HANDLE_KIND_BUILTIN) {                   \
+        if (unlikely(handle_kind_ != HANDLE_KIND_BUILTIN)) {         \
             MPIU_Object_release_ref_always((objptr_), (inuse_ptr_)); \
         }                                                            \
         else {                                                       \
@@ -375,7 +350,6 @@ typedef OPA_int_t MPIU_Handle_ref_count;
  * NOTE: This macro *must* be invoked as the very first element of the structure! */
 #define MPIU_OBJECT_HEADER             \
     int handle;                        \
-    MPIU_THREAD_OBJECT_HOOK/*no-semi*/ \
     MPIU_Handle_ref_count ref_count/*semicolon intentionally omitted*/
 
 /* ALL objects have the handle as the first value. */

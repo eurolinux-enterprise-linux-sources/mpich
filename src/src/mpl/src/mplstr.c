@@ -70,7 +70,7 @@ int MPL_snprintf(char *str, size_t size, mpl_const char *format, ...)
                     val = va_arg(list, int);
                     sprintf(tmp, "%d", val);
                     if (width > 0) {
-                        int tmplen = strlen(tmp);
+                        size_t tmplen = strlen(tmp);
                         /* If a width was specified, pad with spaces on the
                          * left (on the right if %-3d given; not implemented yet */
                         while (size-- > 0 && width-- > tmplen)
@@ -91,7 +91,7 @@ int MPL_snprintf(char *str, size_t size, mpl_const char *format, ...)
                     val = va_arg(list, int);
                     sprintf(tmp, "%x", val);
                     if (width > 0) {
-                        int tmplen = strlen(tmp);
+                        size_t tmplen = strlen(tmp);
                         /* If a width was specified, pad with spaces on the
                          * left (on the right if %-3d given; not implemented yet */
                         while (size-- > 0 && width-- > tmplen)
@@ -112,7 +112,7 @@ int MPL_snprintf(char *str, size_t size, mpl_const char *format, ...)
                     val = va_arg(list, void *);
                     sprintf(tmp, "%p", val);
                     if (width > 0) {
-                        int tmplen = strlen(tmp);
+                        size_t tmplen = strlen(tmp);
                         /* If a width was specified, pad with spaces on the
                          * left (on the right if %-3d given; not implemented yet */
                         while (size-- > 0 && width-- > tmplen)
@@ -298,3 +298,17 @@ char *MPL_strsep(char **stringp, const char *delim)
     }
 }
 
+
+/* there's no standard portable way to convert error codes to human readable
+ * strings.  The standard way to do that is via strerror() but if for some
+ * resason we don't have it, then we'll merely output the error code seen */
+#if !defined MPL_HAVE_STRERROR
+char *MPL_strerror(int errnum)
+{
+#define STRERROR_SIZE 256
+    static char msgbuf[STRERROR_SIZE];
+    snprintf(msgbuf, STRERROR_SIZE, "errno = %d", errnum);
+#undef STRERROR_SIZE
+    return msgbuf;
+}
+#endif /* MPL_HAVE_STRERROR */

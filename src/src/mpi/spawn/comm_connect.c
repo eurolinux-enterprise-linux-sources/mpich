@@ -13,6 +13,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_connect  MPI_Comm_connect
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_connect as PMPI_Comm_connect
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_connect(const char *port_name, MPI_Info info, int root, MPI_Comm comm,
+                     MPI_Comm *newcomm) __attribute__((weak,alias("PMPI_Comm_connect")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -25,7 +28,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Comm_connect_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Comm_connect_impl(const char * port_name, MPID_Info * info_ptr, int root,
                           MPID_Comm * comm_ptr, MPID_Comm ** newcomm_ptr)
 {
@@ -37,7 +40,7 @@ int MPIR_Comm_connect_impl(const char * port_name, MPID_Info * info_ptr, int roo
 #undef FUNCNAME
 #define FUNCNAME MPI_Comm_connect
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
    MPI_Comm_connect - Make a request to form a new intercommunicator
 
@@ -71,7 +74,7 @@ int MPI_Comm_connect(const char *port_name, MPI_Info info, int root, MPI_Comm co
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_CONNECT);
     
     /* Validate parameters, especially handles needing to be converted */
@@ -96,7 +99,7 @@ int MPI_Comm_connect(const char *port_name, MPI_Info info, int root, MPI_Comm co
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
 	    /* If comm_ptr is not valid, it will be reset to null */
             if (mpi_errno) goto fn_fail;
         }
@@ -109,13 +112,13 @@ int MPI_Comm_connect(const char *port_name, MPI_Info info, int root, MPI_Comm co
     mpi_errno = MPIR_Comm_connect_impl(port_name, info_ptr, root, comm_ptr, &newcomm_ptr);
     if (mpi_errno) goto fn_fail;
 
-    MPIU_OBJ_PUBLISH_HANDLE(*newcomm, newcomm_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*newcomm, newcomm_ptr->handle);
 
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_CONNECT);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

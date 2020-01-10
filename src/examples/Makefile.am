@@ -9,15 +9,15 @@
 # all of these?
 MPICHDIR=..
 #CC       = $(MPICHDIR)/bin/mpicc
-CFLAGS   = $(WRAPPER_CFLAGS)
+AM_CFLAGS   = $(WRAPPER_CFLAGS)
 CXXFLAGS = $(WRAPPER_CXXFLAGS)
 FFLAGS   = $(WRAPPER_FFLAGS)
 FCFLAGS  = $(WRAPPER_FCFLAGS)
-LDFLAGS  =
-CPPFLAGS = $(WRAPPER_CPPFLAGS)
+AM_LDFLAGS  =
+AM_CPPFLAGS = $(WRAPPER_CPPFLAGS)
 #DEFS     = 
 
-AM_CPPFLAGS = -I$(top_builddir)/src/include -I${top_srcdir}/src/include
+AM_CPPFLAGS += -I$(top_builddir)/src/include -I${top_srcdir}/src/include
 if BUILD_ROMIO
 AM_CPPFLAGS += -I$(top_builddir)/src/mpi/romio/include -I${top_srcdir}/mpi/romio/include/include
 endif BUILD_ROMIO
@@ -33,17 +33,17 @@ cpi_DEPENDENCIES =
 # to get rebuilt whenever MPICH's core libraries are rebuilt, but perhaps there
 # is a better system?
 
-# the make-time instances of libpmpich.la and libmpich.la live here
-LDFLAGS += -L../lib
+# the make-time instances of libpmpi.la and libmpi.la live here
+AM_LDFLAGS += -L../lib
 # the make-time instances of libmpl.la and libopa.la live here
-LDFLAGS += -L../src/mpl -L../src/openpa/src
+AM_LDFLAGS += @mpllibdir@ @opalibdir@
 
 # Wrapper LDFLAGS need to be added at the end to make sure we link
 # with the libraries we just built, and not any previously installed
 # libraries.
-LDFLAGS += $(WRAPPER_LDFLAGS)
+AM_LDFLAGS += $(WRAPPER_LDFLAGS)
 
-external_libs = -lmpl -lopa $(WRAPPER_LIBS)
+external_libs = $(WRAPPER_LIBS)
 if BUILD_PROFILING_LIB
 LIBS += -l@PMPILIBNAME@
 cpi_DEPENDENCIES += ../lib/lib@PMPILIBNAME@.la
@@ -57,7 +57,7 @@ noinst_PROGRAMS = cpi
 # pmandel requires a separate set of socket calls (its a long story)
 # and may not build on most platforms
 EXTRA_PROGRAMS = pmandel pmandel_spawn pmandel_service pmandel_spaserv    \
-                 pmandel_fence hellow icpi parent child srtest \
+                 pmandel_fence hellow icpi ircpi parent child srtest \
                  spawn_merge_parent spawn_merge_child1 spawn_merge_child2
 
 # LIBS includes -lmpich and other libraries (e.g., -lpmpich if
@@ -78,10 +78,12 @@ parent_SOURCES = parent.c
 # --disable-static" is passed to configure.
 cpi_SOURCES = cpi.c
 cpi_LDADD = -lm
-cpi_LDFLAGS = $(LDFLAGS) $(mpich_libtool_static_flag)
+cpi_LDFLAGS = $(AM_LDFLAGS) $(mpich_libtool_static_flag)
 
 icpi_SOURCES = icpi.c
 icpi_LDADD = -lm
+ircpi_SOURCES = ircpi.c
+ircpi_LDADD = -lm
 pmandel_SOURCES = pmandel.c
 pmandel_LDADD = -lm
 pmandel_spawn_SOURCES = pmandel_spawn.c

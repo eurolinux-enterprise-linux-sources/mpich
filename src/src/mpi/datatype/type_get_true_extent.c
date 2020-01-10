@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_get_true_extent  MPI_Type_get_true_extent
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_get_true_extent as PMPI_Type_get_true_extent
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_get_true_extent(MPI_Datatype datatype, MPI_Aint *true_lb, MPI_Aint *true_extent) __attribute__((weak,alias("PMPI_Type_get_true_extent")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,7 +28,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Type_get_true_extent_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_Type_get_true_extent_impl(MPI_Datatype datatype, MPI_Aint *true_lb, MPI_Aint *true_extent)
 {
     MPI_Count true_lb_x, true_extent_x;
@@ -41,7 +43,7 @@ void MPIR_Type_get_true_extent_impl(MPI_Datatype datatype, MPI_Aint *true_lb, MP
 #undef FUNCNAME
 #define FUNCNAME MPI_Type_get_true_extent
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
    MPI_Type_get_true_extent - Get the true lower bound and extent for a
      datatype
@@ -66,7 +68,6 @@ int MPI_Type_get_true_extent(MPI_Datatype datatype, MPI_Aint *true_lb,
 			     MPI_Aint *true_extent)
 {
     int mpi_errno = MPI_SUCCESS;
-    MPID_Datatype *datatype_ptr = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_GET_TRUE_EXTENT);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
@@ -84,14 +85,16 @@ int MPI_Type_get_true_extent(MPI_Datatype datatype, MPI_Aint *true_lb,
     }
 #   endif
 
-    /* Convert MPI object handles to object pointers */
-    MPID_Datatype_get_ptr(datatype, datatype_ptr);
-
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
+            /* Convert MPI object handles to object pointers */
+            MPID_Datatype_get_ptr(datatype, datatype_ptr);
+
             /* Validate datatype_ptr */
             MPID_Datatype_valid_ptr(datatype_ptr, mpi_errno);
             if (mpi_errno) goto fn_fail;

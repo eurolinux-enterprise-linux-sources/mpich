@@ -14,6 +14,10 @@
 #pragma _HP_SECONDARY_DEF PMPI_Sendrecv_replace  MPI_Sendrecv_replace
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Sendrecv_replace as PMPI_Sendrecv_replace
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Sendrecv_replace(void *buf, int count, MPI_Datatype datatype, int dest,
+                         int sendtag, int source, int recvtag, MPI_Comm comm,
+                         MPI_Status *status) __attribute__((weak,alias("PMPI_Sendrecv_replace")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -77,7 +81,7 @@ int MPI_Sendrecv_replace(void *buf, int count, MPI_Datatype datatype,
     
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER_BOTH(MPID_STATE_MPI_SENDRECV_REPLACE);
 
     /* Convert handles to MPI objects. */
@@ -88,7 +92,7 @@ int MPI_Sendrecv_replace(void *buf, int count, MPI_Datatype datatype,
         MPID_BEGIN_ERROR_CHECKS;
         {
 	    /* Validate communicator */
-            MPID_Comm_valid_ptr(comm_ptr, mpi_errno);
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 	    
 	    /* Validate count */
@@ -140,8 +144,8 @@ int MPI_Sendrecv_replace(void *buf, int count, MPI_Datatype datatype,
 	MPID_Request * sreq;
 	MPID_Request * rreq;
 	void * tmpbuf = NULL;
-	int tmpbuf_size = 0;
-	int tmpbuf_count = 0;
+	MPI_Aint tmpbuf_size = 0;
+	MPI_Aint tmpbuf_count = 0;
 
 	if (count > 0 && dest != MPI_PROC_NULL)
 	{
@@ -216,7 +220,7 @@ int MPI_Sendrecv_replace(void *buf, int count, MPI_Datatype datatype,
   fn_exit:
     MPIU_CHKLMEM_FREEALL();
     MPID_MPI_PT2PT_FUNC_EXIT_BOTH(MPID_STATE_MPI_SENDRECV_REPLACE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
     
   fn_fail:

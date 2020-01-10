@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Add_error_class  MPI_Add_error_class
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Add_error_class as PMPI_Add_error_class
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Add_error_class(int *errorclass) __attribute__((weak,alias("PMPI_Add_error_class")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -52,7 +54,7 @@ int MPI_Add_error_class(int *errorclass)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_ADD_ERROR_CLASS);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -69,7 +71,7 @@ int MPI_Add_error_class(int *errorclass)
     /* ... body of routine ...  */
     
     new_class = MPIR_Err_add_class( );
-    MPIU_ERR_CHKANDJUMP(new_class<0,mpi_errno,MPI_ERR_OTHER,"**noerrclasses");
+    MPIR_ERR_CHKANDJUMP(new_class<0,mpi_errno,MPI_ERR_OTHER,"**noerrclasses");
 
     *errorclass = ERROR_DYN_MASK | new_class;
 
@@ -82,7 +84,7 @@ int MPI_Add_error_class(int *errorclass)
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_ADD_ERROR_CLASS);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

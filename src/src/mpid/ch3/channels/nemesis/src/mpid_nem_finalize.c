@@ -15,7 +15,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_finalize
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPID_nem_finalize(void)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -34,7 +34,8 @@ int MPID_nem_finalize(void)
     MPIU_Free(MPID_nem_mem_region.FreeQ);
     MPIU_Free(MPID_nem_mem_region.RecvQ);
     MPIU_Free(MPID_nem_mem_region.local_ranks);
-    MPIU_Free(MPID_nem_mem_region.ext_ranks);
+    if (MPID_nem_mem_region.ext_procs > 0)
+        MPIU_Free(MPID_nem_mem_region.ext_ranks);
     MPIU_Free(MPID_nem_mem_region.seg);
     MPIU_Free(MPID_nem_mem_region.mailboxes.out);
     MPIU_Free(MPID_nem_mem_region.mailboxes.in);
@@ -46,19 +47,19 @@ int MPID_nem_finalize(void)
 #endif /* MEM_REGION_IN_HEAP */
 
     mpi_errno = MPID_nem_netmod_func->finalize();
-    if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP (mpi_errno);
 
     /* free the shared memory segment */
     mpi_errno = MPIDI_CH3I_Seg_destroy();
-    if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP (mpi_errno);
 
 #ifdef PAPI_MONITOR
     my_papi_close();
 #endif /*PAPI_MONITOR */
     
-#if ENABLE_NEM_STATISTICS
-    MPIU_Free(MPID_nem_fbox_fall_back_to_queue_count);
-#endif
+    if (ENABLE_PVAR_NEM) {
+        MPIU_Free(MPID_nem_fbox_fall_back_to_queue_count);
+    }
 
  fn_exit:
     MPIDI_FUNC_EXIT(MPID_STATE_MPID_NEM_FINALIZE);

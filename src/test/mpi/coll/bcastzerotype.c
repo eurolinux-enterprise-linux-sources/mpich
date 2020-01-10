@@ -1,3 +1,10 @@
+/* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
+/*
+ *
+ *  (C) 2012 by Argonne National Laboratory.
+ *      See COPYRIGHT in top-level directory.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -19,7 +26,7 @@ int main(int argc, char *argv[])
 
     /* a random non-zero sized buffer */
 #define NELEM (10)
-    buf = malloc(NELEM*sizeof(int));
+    buf = malloc(NELEM * sizeof(int));
     assert(buf);
 
     for (i = 0; i < NELEM; i++) {

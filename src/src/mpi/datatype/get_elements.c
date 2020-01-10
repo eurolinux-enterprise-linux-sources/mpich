@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Get_elements  MPI_Get_elements
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Get_elements as PMPI_Get_elements
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Get_elements(const MPI_Status *status, MPI_Datatype datatype, int *count) __attribute__((weak,alias("PMPI_Get_elements")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -30,7 +32,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPI_Get_elements
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
    MPI_Get_elements - Returns the number of basic elements
                       in a datatype
@@ -57,7 +59,6 @@ int MPI_Get_elements(const MPI_Status *status, MPI_Datatype datatype, int *count
 {
     int mpi_errno = MPI_SUCCESS;
     MPI_Count count_x;
-    MPID_Datatype *datatype_ptr = NULL;
 
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_GET_ELEMENTS);
 
@@ -76,16 +77,17 @@ int MPI_Get_elements(const MPI_Status *status, MPI_Datatype datatype, int *count
     }
 #   endif
 
-    /* Convert MPI object handles to object pointers */
-    MPID_Datatype_get_ptr(datatype, datatype_ptr);
-
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
 	    MPIR_ERRTEST_ARGNULL(status, "status", mpi_errno);
 	    MPIR_ERRTEST_ARGNULL(count, "count", mpi_errno);
+            /* Convert MPI object handles to object pointers */
+            MPID_Datatype_get_ptr(datatype, datatype_ptr);
             /* Validate datatype_ptr */
 	    if (HANDLE_GET_KIND(datatype) != HANDLE_KIND_BUILTIN) {
 		MPID_Datatype_get_ptr(datatype, datatype_ptr);
@@ -103,7 +105,7 @@ int MPI_Get_elements(const MPI_Status *status, MPI_Datatype datatype, int *count
     /* ... body of routine ...  */
 
     mpi_errno = MPIR_Get_elements_x_impl(status, datatype, &count_x);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* clip the value if it cannot be correctly returned to the user */
     *count = (count_x > INT_MAX) ? MPI_UNDEFINED : (int)count_x;

@@ -47,8 +47,8 @@ int MPID_Type_create_resized(MPI_Datatype oldtype,
 	int oldsize = MPID_Datatype_get_basic_size(oldtype);
 
 	new_dtp->size           = oldsize;
-	new_dtp->has_sticky_ub  = 1;
-	new_dtp->has_sticky_lb  = 1;
+	new_dtp->has_sticky_ub  = 0;
+	new_dtp->has_sticky_lb  = 0;
 	new_dtp->dataloop_depth = 1;
 	new_dtp->true_lb        = 0;
 	new_dtp->lb             = lb;
@@ -56,10 +56,11 @@ int MPID_Type_create_resized(MPI_Datatype oldtype,
 	new_dtp->ub             = lb + extent;
 	new_dtp->extent         = extent;
 	new_dtp->alignsize      = oldsize; /* FIXME ??? */
-	new_dtp->n_elements     = 1;
-	new_dtp->element_size   = oldsize;
+	new_dtp->n_builtin_elements     = 1;
+	new_dtp->builtin_element_size   = oldsize;
 	new_dtp->is_contig      = (extent == oldsize) ? 1 : 0;
-        new_dtp->eltype         = oldtype;
+        new_dtp->basic_type         = oldtype;
+	new_dtp->max_contig_blocks = 3;  /* lb, data, ub */
     }
     else
     {
@@ -69,8 +70,8 @@ int MPID_Type_create_resized(MPI_Datatype oldtype,
 	MPID_Datatype_get_ptr(oldtype, old_dtp);
 
 	new_dtp->size           = old_dtp->size;
-	new_dtp->has_sticky_ub  = 1;
-	new_dtp->has_sticky_lb  = 1;
+	new_dtp->has_sticky_ub  = 0;
+	new_dtp->has_sticky_lb  = 0;
 	new_dtp->dataloop_depth = old_dtp->dataloop_depth;
 	new_dtp->true_lb        = old_dtp->true_lb;
 	new_dtp->lb             = lb;
@@ -78,12 +79,13 @@ int MPID_Type_create_resized(MPI_Datatype oldtype,
 	new_dtp->ub             = lb + extent;
 	new_dtp->extent         = extent;
 	new_dtp->alignsize      = old_dtp->alignsize;
-	new_dtp->n_elements     = old_dtp->n_elements;
-	new_dtp->element_size   = old_dtp->element_size;
-        new_dtp->eltype         = old_dtp->eltype;
+	new_dtp->n_builtin_elements     = old_dtp->n_builtin_elements;
+	new_dtp->builtin_element_size   = old_dtp->builtin_element_size;
+        new_dtp->basic_type         = old_dtp->basic_type;
 
 	new_dtp->is_contig      =
 	    (extent == old_dtp->size) ? old_dtp->is_contig : 0;
+	new_dtp->max_contig_blocks = old_dtp->max_contig_blocks;
     }
 
     *newtype_p = new_dtp->handle;

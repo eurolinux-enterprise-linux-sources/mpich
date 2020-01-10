@@ -14,6 +14,11 @@
 #pragma _HP_SECONDARY_DEF PMPI_Accumulate  MPI_Accumulate
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Accumulate as PMPI_Accumulate
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype,
+                   int target_rank, MPI_Aint target_disp, int target_count,
+                   MPI_Datatype target_datatype, MPI_Op op, MPI_Win win)
+                   __attribute__((weak,alias("PMPI_Accumulate")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -72,7 +77,7 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_RMA_FUNC_ENTER(MPID_STATE_MPI_ACCUMULATE);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -102,6 +107,7 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype
 
 	    MPIR_ERRTEST_COUNT(origin_count, mpi_errno);
 	    MPIR_ERRTEST_DATATYPE(origin_datatype, "origin_datatype", mpi_errno);
+	    MPIR_ERRTEST_USERBUFFER(origin_addr, origin_count, origin_datatype, mpi_errno);
 	    MPIR_ERRTEST_COUNT(target_count, mpi_errno);
 	    MPIR_ERRTEST_DATATYPE(target_datatype, "target_datatype", mpi_errno);
             if (win_ptr->create_flavor != MPI_WIN_FLAVOR_DYNAMIC)
@@ -138,18 +144,18 @@ int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype
 #   endif /* HAVE_ERROR_CHECKING */
 
     /* ... body of routine ...  */
-    
-    mpi_errno = MPIU_RMA_CALL(win_ptr,Accumulate(origin_addr, origin_count, 
-					 origin_datatype,
-					 target_rank, target_disp, target_count,
-					 target_datatype, op, win_ptr));
+
+    mpi_errno = MPID_Accumulate(origin_addr, origin_count,
+                                origin_datatype,
+                                target_rank, target_disp, target_count,
+                                target_datatype, op, win_ptr);
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_RMA_FUNC_EXIT(MPID_STATE_MPI_ACCUMULATE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

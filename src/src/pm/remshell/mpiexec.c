@@ -55,8 +55,7 @@
 
   The singleton process (in a routine in simple_pmi.c) forks a process and
   execs mpiexe with these arguments, where port is the port to which 
-  mpiexec should connect, interfacename is the name of the network interface
-  (BUG: may not be correctly set as mpd currently ignores it), securitykey
+  mpiexec should connect, interfacename is the name of the network interface, securitykey
   is a place-holder for a key used by the singleton init process to verify
   that the process connecting on the port is the one that was intended, and
   pid is the pid of the singleton init process.
@@ -129,7 +128,7 @@ int main( int argc, char *argv[], char *envp[] )
     /* If there were any soft arguments, we need to handle them now */
     rc = MPIE_InitWorldWithSoft( &pUniv.worlds[0], pUniv.size );
     if (!rc) {
-	MPIU_Error_printf( "Unable to process soft arguments\n" );
+	MPL_error_printf( "Unable to process soft arguments\n" );
 	exit(1);
     }
 
@@ -142,7 +141,7 @@ int main( int argc, char *argv[], char *envp[] )
 
     rc = MPIE_ChooseHosts( &pUniv.worlds[0], MPIE_ReadMachines, 0 );
     if (rc) {
-	MPIU_Error_printf( "Unable to assign hosts to processes\n" );
+	MPL_error_printf( "Unable to assign hosts to processes\n" );
 	exit(1);
     }
 
@@ -154,7 +153,7 @@ int main( int argc, char *argv[], char *envp[] )
        processes */
     rc = PMIServSetupPort( &pUniv, portString, sizeof(portString) );
     if (rc) {
-	MPIU_Error_printf( "Unable to setup port for listener\n" );
+	MPL_error_printf( "Unable to setup port for listener\n" );
 	exit(1);
     }
     s.pmiinfo.portName = portString;
@@ -177,7 +176,7 @@ int main( int argc, char *argv[], char *envp[] )
     }
     else {
 	/* FIXME: The singleton code goes here */
-	MPIU_Error_printf( "Singleton init not supported\n" );
+	MPL_error_printf( "Singleton init not supported\n" );
 	exit(1);
     }
     reason = MPIE_IOLoop( pUniv.timeout );
@@ -186,11 +185,11 @@ int main( int argc, char *argv[], char *envp[] )
 	/* Exited due to timeout.  Generate an error message and
 	   terminate the children */
 	if (pUniv.timeout > 60) {
-	    MPIU_Error_printf( "Timeout of %d minutes expired; job aborted\n",
+	    MPL_error_printf( "Timeout of %d minutes expired; job aborted\n",
 			       pUniv.timeout / 60 );
 	}
 	else {
-	    MPIU_Error_printf( "Timeout of %d seconds expired; job aborted\n",
+	    MPL_error_printf( "Timeout of %d seconds expired; job aborted\n",
 			       pUniv.timeout );
 	}
 	erc = 1;
@@ -220,12 +219,12 @@ int main( int argc, char *argv[], char *envp[] )
 void mpiexec_usage( const char *msg )
 {
     if (msg) {
-	MPIU_Error_printf( "%s", msg );
+	MPL_error_printf( "%s", msg );
 	if (msg[strlen(msg)-1] != '\n') {
-	    MPIU_Error_printf( "\n" );
+	    MPL_error_printf( "\n" );
 	}
     }
-    MPIU_Usage_printf( "Usage: mpiexec %s\n", MPIE_ArgDescription() );
+    MPL_usage_printf( "Usage: mpiexec %s\n", MPIE_ArgDescription() );
     exit( -1 );
 }
 
@@ -270,7 +269,7 @@ int mypostfork( void *predata, void *data, ProcessState *pState )
 	newargs = (const char **) MPIU_Malloc( (app->nArgs + 14 + 1) * 
 					  sizeof(char *) );
 	if (!pState->hostname) {
-	    MPIU_Error_printf( "No hostname avaliable for %s\n", app->exename );
+	    MPL_error_printf( "No hostname avaliable for %s\n", app->exename );
 	    exit(1);
 	}
 
@@ -374,7 +373,6 @@ int myspawn( ProcessWorld *pWorld, void *data )
  * 1) Use an intermediate manager.  This would allow us to set up the
  *    environment as well:
  *    remshell-program remshell-args manager -port string
- *    One possibilty for the manager is the mpd manager
  * 2) Use the secure server (even the same one as in MPICH1); then 
  *    there is no remote shell command.
  * 

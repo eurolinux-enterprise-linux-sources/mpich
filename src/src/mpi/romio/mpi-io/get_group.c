@@ -16,6 +16,8 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_get_group as PMPI_File_get_group
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_get_group(MPI_File fh, MPI_Group *group) __attribute__((weak,alias("PMPI_File_get_group")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -41,7 +43,7 @@ int MPI_File_get_group(MPI_File fh, MPI_Group *group)
     ADIO_File adio_fh;
     static char myname[] = "MPI_FILE_GET_GROUP";
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     adio_fh = MPIO_File_resolve(fh);
 
@@ -57,6 +59,6 @@ int MPI_File_get_group(MPI_File fh, MPI_Group *group)
     error_code = MPI_Comm_group(adio_fh->comm, group);
 
 fn_exit:
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
     return error_code;
 }

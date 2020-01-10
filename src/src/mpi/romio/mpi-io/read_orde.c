@@ -16,6 +16,8 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_read_ordered_end as PMPI_File_read_ordered_end
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_read_ordered_end(MPI_File fh, void *buf, MPI_Status *status) __attribute__((weak,alias("PMPI_File_read_ordered_end")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -43,7 +45,7 @@ int MPI_File_read_ordered_end(MPI_File fh, void *buf, MPI_Status *status)
 
     MPIU_UNREFERENCED_ARG(buf);
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     adio_fh = MPIO_File_resolve(fh);
 
@@ -67,7 +69,7 @@ int MPI_File_read_ordered_end(MPI_File fh, void *buf, MPI_Status *status)
     adio_fh->split_coll_count = 0;
 
 fn_exit:
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
 
     return error_code;
 }

@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_disconnect  MPI_Comm_disconnect
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_disconnect as PMPI_Comm_disconnect
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_disconnect(MPI_Comm *comm) __attribute__((weak,alias("PMPI_Comm_disconnect")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -57,7 +59,7 @@ int MPI_Comm_disconnect(MPI_Comm * comm)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_DISCONNECT);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -80,7 +82,7 @@ int MPI_Comm_disconnect(MPI_Comm * comm)
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
 	    /* If comm_ptr is not valid, it will be reset to null */
             if (mpi_errno)
 	    {
@@ -130,7 +132,7 @@ int MPI_Comm_disconnect(MPI_Comm * comm)
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_DISCONNECT);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

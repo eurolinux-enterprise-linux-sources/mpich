@@ -15,6 +15,11 @@
 #pragma _HP_SECONDARY_DEF PMPI_Dist_graph_create_adjacent  MPI_Dist_graph_create_adjacent
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Dist_graph_create_adjacent as PMPI_Dist_graph_create_adjacent
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old, int indegree, const int sources[],
+                                   const int sourceweights[], int outdegree,
+                                   const int destinations[], const int destweights[],
+                                   MPI_Info info, int reorder, MPI_Comm *comm_dist_graph) __attribute__((weak,alias("PMPI_Dist_graph_create_adjacent")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -30,7 +35,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPI_Dist_graph_create_adjacent
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
 MPI_Dist_graph_create_adjacent - returns a handle to a new communicator to
 which the distributed graph topology information is attached.
@@ -79,7 +84,7 @@ int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_DIST_GRAPH_CREATE_ADJACENT);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -103,7 +108,7 @@ int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old,
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr(comm_ptr, mpi_errno);
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno != MPI_SUCCESS) goto fn_fail;
             /* If comm_ptr is not valid, it will be reset to null */
             if (comm_ptr) {
@@ -116,7 +121,7 @@ int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old,
             if (indegree > 0) {
                 MPIR_ERRTEST_ARGNULL(sources, "sources", mpi_errno);
                 if (sourceweights == MPI_UNWEIGHTED && destweights != MPI_UNWEIGHTED) {
-                    MPIU_ERR_SET(mpi_errno, MPIR_ERR_RECOVERABLE, "**unweightedboth");
+                    MPIR_ERR_SET(mpi_errno, MPI_ERR_TOPOLOGY, "**unweightedboth");
                     goto fn_fail;
                 }
                 /* TODO check ranges for array elements too (**argarrayneg / **rankarray)*/
@@ -124,7 +129,7 @@ int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old,
             if (outdegree > 0) {
                 MPIR_ERRTEST_ARGNULL(destinations, "destinations", mpi_errno);
                 if (destweights == MPI_UNWEIGHTED && sourceweights != MPI_UNWEIGHTED) {
-                    MPIU_ERR_SET(mpi_errno, MPIR_ERR_RECOVERABLE, "**unweightedboth");
+                    MPIR_ERR_SET(mpi_errno, MPI_ERR_TOPOLOGY, "**unweightedboth");
                     goto fn_fail;
                 }
             }
@@ -143,7 +148,7 @@ int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old,
     /* following the spirit of the old topo interface, attributes do not
      * propagate to the new communicator (see MPI-2.1 pp. 243 line 11) */
     mpi_errno = MPIR_Comm_copy(comm_ptr, comm_ptr->local_size, &comm_dist_graph_ptr);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* Create the topology structure */
     MPIU_CHKPMEM_MALLOC(topo_ptr, MPIR_Topology *, sizeof(MPIR_Topology), mpi_errno, "topo_ptr");
@@ -170,14 +175,14 @@ int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old,
     }
 
     mpi_errno = MPIR_Topology_put(comm_dist_graph_ptr, topo_ptr);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
-    MPIU_OBJ_PUBLISH_HANDLE(*comm_dist_graph, comm_dist_graph_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*comm_dist_graph, comm_dist_graph_ptr->handle);
     MPIU_CHKPMEM_COMMIT();
     /* ... end of body of routine ... */
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_DIST_GRAPH_CREATE_ADJACENT);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
     /* --BEGIN ERROR HANDLING-- */

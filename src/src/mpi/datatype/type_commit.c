@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_commit  MPI_Type_commit
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_commit as PMPI_Type_commit
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_commit(MPI_Datatype *datatype) __attribute__((weak,alias("PMPI_Type_commit")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,7 +28,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Type_commit_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Type_commit_impl(MPI_Datatype *datatype)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -41,7 +43,7 @@ int MPIR_Type_commit_impl(MPI_Datatype *datatype)
 	*datatype == MPI_LONG_DOUBLE_INT) goto fn_exit;
 
     mpi_errno = MPID_Type_commit(datatype);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     
  fn_exit:
     return mpi_errno;
@@ -54,7 +56,7 @@ int MPIR_Type_commit_impl(MPI_Datatype *datatype)
 #undef FUNCNAME
 #define FUNCNAME MPI_Type_commit
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
     MPI_Type_commit - Commits the datatype
 
@@ -72,12 +74,11 @@ Input Parameters:
 int MPI_Type_commit(MPI_Datatype *datatype)
 {
     int mpi_errno = MPI_SUCCESS;
-    MPID_Datatype *datatype_ptr = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_COMMIT);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_COMMIT);
     
     /* Validate parameters, especially handles needing to be converted */
@@ -92,14 +93,16 @@ int MPI_Type_commit(MPI_Datatype *datatype)
     }
 #   endif
     
-    /* Convert MPI object handles to object pointers */
-    MPID_Datatype_get_ptr( *datatype, datatype_ptr );
-    
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
+            /* Convert MPI object handles to object pointers */
+            MPID_Datatype_get_ptr( *datatype, datatype_ptr );
+
             /* Validate datatype_ptr */
             MPID_Datatype_valid_ptr(datatype_ptr, mpi_errno);
             if (mpi_errno) goto fn_fail;
@@ -111,13 +114,13 @@ int MPI_Type_commit(MPI_Datatype *datatype)
     /* ... body of routine ... */
 
     mpi_errno = MPIR_Type_commit_impl(datatype);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     
     /* ... end of body of routine ... */
     
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_COMMIT);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

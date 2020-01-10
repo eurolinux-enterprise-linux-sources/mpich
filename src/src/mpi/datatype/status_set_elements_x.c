@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
 /*
- *  (C) 2012 by Argonne National Laboratory.
+ *  (C) 2011 by Argonne National Laboratory.
  *      See COPYRIGHT in top-level directory.
  */
 
@@ -13,6 +13,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Status_set_elements_x  MPI_Status_set_elements_x
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Status_set_elements_x as PMPI_Status_set_elements_x
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Status_set_elements_x(MPI_Status *status, MPI_Datatype datatype, MPI_Count count) __attribute__((weak,alias("PMPI_Status_set_elements_x")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Status_set_elements_x_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Status_set_elements_x_impl(MPI_Status *status, MPI_Datatype datatype, MPI_Count count)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -38,10 +40,10 @@ int MPIR_Status_set_elements_x_impl(MPI_Status *status, MPI_Datatype datatype, M
     /* overflow check, should probably be a real error check? */
     if (count != 0) {
         MPIU_Assert(size_x >= 0 && count > 0);
-        MPIU_Assert(size_x < MPIR_COUNT_MAX / count);
+        MPIU_Assert(count * size_x < MPIR_COUNT_MAX);
     }
 
-    status->count = size_x * count;
+    MPIR_STATUS_SET_COUNT(*status, size_x * count);
 
 fn_exit:
     return mpi_errno;
@@ -54,7 +56,7 @@ fn_fail:
 #undef FUNCNAME
 #define FUNCNAME MPI_Status_set_elements_x
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
 MPI_Status_set_elements_x - XXX description here
 
@@ -76,7 +78,7 @@ int MPI_Status_set_elements_x(MPI_Status *status, MPI_Datatype datatype, MPI_Cou
     int mpi_errno = MPI_SUCCESS;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_STATUS_SET_ELEMENTS_X);
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_STATUS_SET_ELEMENTS_X);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -117,13 +119,13 @@ int MPI_Status_set_elements_x(MPI_Status *status, MPI_Datatype datatype, MPI_Cou
     /* ... body of routine ...  */
 
     mpi_errno = MPIR_Status_set_elements_x_impl(status, datatype, count);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* ... end of body of routine ... */
 
 fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_STATUS_SET_ELEMENTS_X);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
 fn_fail:

@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
 /*
- *  (C) 2009 by Argonne National Laboratory.
+ *  (C) 2010 by Argonne National Laboratory.
  *      See COPYRIGHT in top-level directory.
  */
 
@@ -158,7 +158,7 @@
 #    define MPL_VG_PRINTF_BACKTRACE(...)              do {} while (0)
 #  else
 #    define MPL_VG_PRINTF_BACKTRACE MPL_VG_printf_do_nothing_func
-static inline void MPL_VG_printf_do_nothing_func(char *fmt, ...)
+static mpl_inline void MPL_VG_printf_do_nothing_func(char *fmt, ...)
 {
     /* do nothing */
 }

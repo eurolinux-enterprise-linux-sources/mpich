@@ -14,15 +14,13 @@
 
 #include "adio.h"
 #include "mpio.h"
-#include "mpiu_external32.h"
 
 #ifdef ROMIO_INSIDE_MPICH
 #include "glue_romio.h"
 
-#define MPIU_THREAD_CS_ENTER(name_,ctx_) MPIU_THREAD_CS_ENTER_##name_(ctx_)
-#define MPIU_THREAD_CS_EXIT(name_,ctx_)  MPIU_THREAD_CS_EXIT_##name_(ctx_)
-#define MPIU_THREAD_CS_ENTER_ALLFUNC(ctx_) MPIR_Ext_cs_enter_allfunc()
-#define MPIU_THREAD_CS_EXIT_ALLFUNC(ctx_) MPIR_Ext_cs_exit_allfunc()
+#define ROMIO_THREAD_CS_ENTER() MPIR_Ext_cs_enter()
+#define ROMIO_THREAD_CS_EXIT() MPIR_Ext_cs_exit()
+#define ROMIO_THREAD_CS_YIELD() MPIR_Ext_cs_yield()
 
 /* committed datatype checking support in ROMIO */
 #define MPIO_DATATYPE_ISCOMMITTED(dtype_, err_)        \
@@ -35,8 +33,9 @@
    error reporting features provided by MPICH must implement these 
    four functions.  Defining these as empty should not change the behavior 
    of correct programs */
-#define MPIU_THREAD_CS_ENTER(x,y)
-#define MPIU_THREAD_CS_EXIT(x,y)
+#define ROMIO_THREAD_CS_ENTER()
+#define ROMIO_THREAD_CS_EXIT()
+#define ROMIO_THREAD_CS_YIELD()
 #define MPIO_DATATYPE_ISCOMMITTED(dtype_, err_) do {} while (0)
 #ifdef HAVE_WINDOWS_H
 #define MPIU_UNREFERENCED_ARG(a) a
@@ -58,6 +57,14 @@ MPI_Delete_function ADIOI_End_call;
 
 /* common initialization routine */
 void MPIR_MPIOInit(int * error_code);
+
+#ifdef HAVE_MPIIO_CONST
+#define ROMIO_CONST const
+#else
+#define ROMIO_CONST
+#endif
+
+#include "mpiu_external32.h"
 
 
 #include "mpioprof.h"

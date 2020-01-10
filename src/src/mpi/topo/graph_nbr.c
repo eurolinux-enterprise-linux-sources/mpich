@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Graph_neighbors  MPI_Graph_neighbors
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Graph_neighbors as PMPI_Graph_neighbors
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Graph_neighbors(MPI_Comm comm, int rank, int maxneighbors, int neighbors[]) __attribute__((weak,alias("PMPI_Graph_neighbors")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -29,7 +31,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Graph_neighbors_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Graph_neighbors_impl(MPID_Comm *comm_ptr, int rank, int maxneighbors, int neighbors[])
 {
     int mpi_errno = MPI_SUCCESS;
@@ -38,8 +40,8 @@ int MPIR_Graph_neighbors_impl(MPID_Comm *comm_ptr, int rank, int maxneighbors, i
 
     graph_ptr = MPIR_Topology_get(comm_ptr);
 
-    MPIU_ERR_CHKANDJUMP((!graph_ptr || graph_ptr->kind != MPI_GRAPH), mpi_errno, MPI_ERR_TOPOLOGY, "**notgraphtopo");
-    MPIU_ERR_CHKANDJUMP2((rank < 0 || rank >= graph_ptr->topo.graph.nnodes), mpi_errno, MPI_ERR_RANK, "**rank",
+    MPIR_ERR_CHKANDJUMP((!graph_ptr || graph_ptr->kind != MPI_GRAPH), mpi_errno, MPI_ERR_TOPOLOGY, "**notgraphtopo");
+    MPIR_ERR_CHKANDJUMP2((rank < 0 || rank >= graph_ptr->topo.graph.nnodes), mpi_errno, MPI_ERR_RANK, "**rank",
                          "**rank %d %d", rank, graph_ptr->topo.graph.nnodes);
 
     /* Get location in edges array of the neighbors of the specified rank */
@@ -61,7 +63,7 @@ fn_fail:
 #undef FUNCNAME
 #define FUNCNAME MPI_Graph_neighbors
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 
 /*@
  MPI_Graph_neighbors - Returns the neighbors of a node associated 
@@ -118,7 +120,7 @@ int MPI_Graph_neighbors(MPI_Comm comm, int rank, int maxneighbors,
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 	    /* If comm_ptr is not valid, it will be reset to null */
 	    MPIR_ERRTEST_ARGNULL(neighbors,"neighbors",mpi_errno);
@@ -130,7 +132,7 @@ int MPI_Graph_neighbors(MPI_Comm comm, int rank, int maxneighbors,
     /* ... body of routine ...  */
 
     mpi_errno = MPIR_Graph_neighbors_impl(comm_ptr, rank, maxneighbors, neighbors);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     
     /* ... end of body of routine ... */

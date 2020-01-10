@@ -11,12 +11,6 @@
 #include "mpi_fortlogical.h"
 #endif
 
-/* We have enabled extensive warnings when using gcc for certain builds.
-   For this file, this generates many specious warnings */
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2)
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
-
 /*
  * In MPI-2.1, this operation is valid only for C integer and Logical
  * types (5.9.2 Predefined reduce operations)
@@ -28,7 +22,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_LAND
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_LAND (
     void *invec,
     void *inoutvec,
@@ -79,9 +73,9 @@ void MPIR_LAND (
 #undef MPIR_OP_TYPE_MACRO
         /* --BEGIN ERROR HANDLING-- */
         default: {
-            MPIU_THREADPRIV_DECL;
-            MPIU_THREADPRIV_GET;
-            MPIU_THREADPRIV_FIELD(op_errno) = MPIR_Err_create_code( MPI_SUCCESS, MPIR_ERR_RECOVERABLE, FCNAME, __LINE__, MPI_ERR_OP, "**opundefined","**opundefined %s", "MPI_LAND" );
+            MPID_THREADPRIV_DECL;
+            MPID_THREADPRIV_GET;
+            MPID_THREADPRIV_FIELD(op_errno) = MPIR_Err_create_code( MPI_SUCCESS, MPIR_ERR_RECOVERABLE, FCNAME, __LINE__, MPI_ERR_OP, "**opundefined","**opundefined %s", "MPI_LAND" );
             break;
         }
         /* --END ERROR HANDLING-- */
@@ -92,7 +86,7 @@ void MPIR_LAND (
 #undef FUNCNAME
 #define FUNCNAME MPIR_LAND
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_LAND_check_dtype ( MPI_Datatype type )
 {
     switch (type) {

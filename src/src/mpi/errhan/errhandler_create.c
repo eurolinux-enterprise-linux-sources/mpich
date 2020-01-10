@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Errhandler_create  MPI_Errhandler_create
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Errhandler_create as PMPI_Errhandler_create
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Errhandler_create(MPI_Handler_function *function, MPI_Errhandler *errhandler) __attribute__((weak,alias("PMPI_Errhandler_create")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -67,7 +69,7 @@ int MPI_Errhandler_create(MPI_Handler_function *function,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_ERRHANDLER_CREATE);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -90,7 +92,7 @@ int MPI_Errhandler_create(MPI_Handler_function *function,
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_ERRHANDLER_CREATE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

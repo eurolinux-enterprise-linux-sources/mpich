@@ -7,6 +7,37 @@
 
 #include "mpiimpl.h"
 
+/*
+=== BEGIN_MPI_T_CVAR_INFO_BLOCK ===
+
+cvars:
+    - name        : MPIR_CVAR_ALLGATHER_SHORT_MSG_SIZE
+      category    : COLLECTIVE
+      type        : int
+      default     : 81920
+      class       : device
+      verbosity   : MPI_T_VERBOSITY_USER_BASIC
+      scope       : MPI_T_SCOPE_ALL_EQ
+      description : >-
+        For MPI_Allgather and MPI_Allgatherv, the short message algorithm will
+        be used if the send buffer size is < this value (in bytes).
+        (See also: MPIR_CVAR_ALLGATHER_LONG_MSG_SIZE)
+
+    - name        : MPIR_CVAR_ALLGATHER_LONG_MSG_SIZE
+      category    : COLLECTIVE
+      type        : int
+      default     : 524288
+      class       : device
+      verbosity   : MPI_T_VERBOSITY_USER_BASIC
+      scope       : MPI_T_SCOPE_ALL_EQ
+      description : >-
+        For MPI_Allgather and MPI_Allgatherv, the long message algorithm will be
+        used if the send buffer size is >= this value (in bytes)
+        (See also: MPIR_CVAR_ALLGATHER_SHORT_MSG_SIZE)
+
+=== END_MPI_T_CVAR_INFO_BLOCK ===
+*/
+
 /* -- Begin Profiling Symbol Block for routine MPI_Allgather */
 #if defined(HAVE_PRAGMA_WEAK)
 #pragma weak MPI_Allgather = PMPI_Allgather
@@ -14,6 +45,10 @@
 #pragma _HP_SECONDARY_DEF PMPI_Allgather  MPI_Allgather
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Allgather as PMPI_Allgather
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf,
+                  int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+                  __attribute__((weak,alias("PMPI_Allgather")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -73,7 +108,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Allgather_intra
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Allgather_intra ( 
     const void *sendbuf,
     int sendcount,
@@ -82,7 +117,7 @@ int MPIR_Allgather_intra (
     int recvcount,
     MPI_Datatype recvtype,
     MPID_Comm *comm_ptr,
-    int *errflag )
+    MPIR_Errflag_t *errflag )
 {
     int comm_size, rank;
     int mpi_errno = MPI_SUCCESS;
@@ -92,7 +127,6 @@ int MPIR_Allgather_intra (
     int j, i, pof2, src, rem;
     void *tmp_buf = NULL;
     int curr_cnt, dst, type_size, left, right, jnext;
-    MPI_Comm comm;
     MPI_Status status;
     int mask, dst_tree_root, my_tree_root, is_homogeneous,  
         send_offset, recv_offset, last_recv_cnt = 0, nprocs_completed, k,
@@ -105,8 +139,7 @@ int MPIR_Allgather_intra (
 
     if (((sendcount == 0) && (sendbuf != MPI_IN_PLACE)) || (recvcount == 0))
         return MPI_SUCCESS;
-    
-    comm = comm_ptr->handle;
+
     comm_size = comm_ptr->local_size;
     rank = comm_ptr->rank;
 
@@ -114,14 +147,14 @@ int MPIR_Allgather_intra (
     MPID_Datatype_get_size_macro( recvtype, type_size );
 
     /* This is the largest offset we add to recvbuf */
-    MPID_Ensure_Aint_fits_in_pointer(MPI_VOID_PTR_CAST_TO_MPI_AINT recvbuf +
+    MPIU_Ensure_Aint_fits_in_pointer(MPIU_VOID_PTR_CAST_TO_MPI_AINT recvbuf +
 				     (comm_size * recvcount * recvtype_extent));
 
     /* check if multiple threads are calling this collective function */
     MPIDU_ERR_CHECK_MULTIPLE_THREADS_ENTER( comm_ptr );
 
     tot_bytes = (MPI_Aint)recvcount * comm_size * type_size;
-    if ((tot_bytes < MPIR_PARAM_ALLGATHER_LONG_MSG_SIZE) && !(comm_size & (comm_size - 1))) {
+    if ((tot_bytes < MPIR_CVAR_ALLGATHER_LONG_MSG_SIZE) && !(comm_size & (comm_size - 1))) {
 
         /* Short or medium size message and power-of-two no. of processes. Use
          * recursive doubling algorithm */   
@@ -141,7 +174,7 @@ int MPIR_Allgather_intra (
                                              rank*recvcount*recvtype_extent), 
                                             recvcount, recvtype);
 		if (mpi_errno) { 
-		    MPIU_ERR_POP(mpi_errno);
+		    MPIR_ERR_POP(mpi_errno);
 		}
             }
             
@@ -168,18 +201,18 @@ int MPIR_Allgather_intra (
                 recv_offset = dst_tree_root * recvcount * recvtype_extent;
                 
                 if (dst < comm_size) {
-                    mpi_errno = MPIC_Sendrecv_ft(((char *)recvbuf + send_offset),
+                    mpi_errno = MPIC_Sendrecv(((char *)recvbuf + send_offset),
                                                  curr_cnt, recvtype, dst,
                                                  MPIR_ALLGATHER_TAG,  
                                                  ((char *)recvbuf + recv_offset),
                                                  (comm_size-dst_tree_root)*recvcount,
                                                  recvtype, dst,
-                                                 MPIR_ALLGATHER_TAG, comm, &status, errflag);
+                                                 MPIR_ALLGATHER_TAG, comm_ptr, &status, errflag);
 		    if (mpi_errno) {
                         /* for communication errors, just record the error but continue */
-                        *errflag = TRUE;
-                        MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                        MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                        *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                        MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                        MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
                         last_recv_cnt = 0;
 		    } else
                         MPIR_Get_count_impl(&status, recvtype, &last_recv_cnt);
@@ -233,18 +266,18 @@ int MPIR_Allgather_intra (
                         if ((dst > rank) && 
                             (rank < tree_root + nprocs_completed)
                             && (dst >= tree_root + nprocs_completed)) {
-                            mpi_errno = MPIC_Send_ft(((char *)recvbuf + offset),
+                            mpi_errno = MPIC_Send(((char *)recvbuf + offset),
                                                      last_recv_cnt,
                                                      recvtype, dst,
-                                                     MPIR_ALLGATHER_TAG, comm, errflag); 
+                                                     MPIR_ALLGATHER_TAG, comm_ptr, errflag);
                             /* last_recv_cnt was set in the previous
                                receive. that's the amount of data to be
                                sent now. */
                             if (mpi_errno) {
                                 /* for communication errors, just record the error but continue */
-                                *errflag = TRUE;
-                                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
                             }
                         }
                         /* recv only if this proc. doesn't have data and sender
@@ -252,18 +285,18 @@ int MPIR_Allgather_intra (
                         else if ((dst < rank) && 
                                  (dst < tree_root + nprocs_completed) &&
                                  (rank >= tree_root + nprocs_completed)) {
-                            mpi_errno = MPIC_Recv_ft(((char *)recvbuf + offset),  
+                            mpi_errno = MPIC_Recv(((char *)recvbuf + offset),
                                                      (comm_size - (my_tree_root + mask))*recvcount,
                                                      recvtype, dst,
                                                      MPIR_ALLGATHER_TAG,
-                                                     comm, &status, errflag); 
+                                                     comm_ptr, &status, errflag);
                             /* nprocs_completed is also equal to the
                                no. of processes whose data we don't have */
                             if (mpi_errno) {
                                 /* for communication errors, just record the error but continue */
-                                *errflag = TRUE;
-                                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
                                 last_recv_cnt = 0;
                             } else
                                 MPIR_Get_count_impl(&status, recvtype, &last_recv_cnt);
@@ -305,13 +338,13 @@ int MPIR_Allgather_intra (
             if (sendbuf != MPI_IN_PLACE) {
                 mpi_errno = MPIR_Pack_impl(sendbuf, sendcount, sendtype, tmp_buf, tmp_buf_size,
                                            &position);
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
             }
             else {
                 /* if in_place specified, local data is found in recvbuf */
                 mpi_errno = MPIR_Pack_impl(((char *)recvbuf + recvtype_extent*rank), recvcount,
                                            recvtype, tmp_buf, tmp_buf_size, &position);
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
             }
             
             curr_cnt = nbytes;
@@ -336,18 +369,18 @@ int MPIR_Allgather_intra (
                 recv_offset = dst_tree_root * nbytes;
                 
                 if (dst < comm_size) {
-                    mpi_errno = MPIC_Sendrecv_ft(((char *)tmp_buf + send_offset),
+                    mpi_errno = MPIC_Sendrecv(((char *)tmp_buf + send_offset),
                                                  curr_cnt, MPI_BYTE, dst,
                                                  MPIR_ALLGATHER_TAG,  
                                                  ((char *)tmp_buf + recv_offset),
                                                  tmp_buf_size - recv_offset,
                                                  MPI_BYTE, dst,
-                                                 MPIR_ALLGATHER_TAG, comm, &status, errflag);
+                                                 MPIR_ALLGATHER_TAG, comm_ptr, &status, errflag);
                     if (mpi_errno) {
                         /* for communication errors, just record the error but continue */
-                        *errflag = TRUE;
-                        MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                        MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                        *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                        MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                        MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
                         last_recv_cnt = 0;
                     } else
                         MPIR_Get_count_impl(&status, MPI_BYTE, &last_recv_cnt);
@@ -394,15 +427,15 @@ int MPIR_Allgather_intra (
                             (rank < tree_root + nprocs_completed)
                             && (dst >= tree_root + nprocs_completed)) {
                             
-                            mpi_errno = MPIC_Send_ft(((char *)tmp_buf + offset),
+                            mpi_errno = MPIC_Send(((char *)tmp_buf + offset),
                                                      last_recv_cnt, MPI_BYTE,
                                                      dst, MPIR_ALLGATHER_TAG,
-                                                     comm, errflag);
+                                                     comm_ptr, errflag);
                             if (mpi_errno) {
                                 /* for communication errors, just record the error but continue */
-                                *errflag = TRUE;
-                                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
                             }
                             /* last_recv_cnt was set in the previous
                                receive. that's the amount of data to be
@@ -413,18 +446,18 @@ int MPIR_Allgather_intra (
                         else if ((dst < rank) && 
                                  (dst < tree_root + nprocs_completed) &&
                                  (rank >= tree_root + nprocs_completed)) {
-                            mpi_errno = MPIC_Recv_ft(((char *)tmp_buf + offset),
+                            mpi_errno = MPIC_Recv(((char *)tmp_buf + offset),
                                                      tmp_buf_size - offset,
                                                      MPI_BYTE, dst,
                                                      MPIR_ALLGATHER_TAG,
-                                                     comm, &status, errflag); 
+                                                     comm_ptr, &status, errflag);
                             /* nprocs_completed is also equal to the
                                no. of processes whose data we don't have */
                             if (mpi_errno) {
                                 /* for communication errors, just record the error but continue */
-                                *errflag = TRUE;
-                                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
                                 last_recv_cnt = 0;
                             } else
                                 MPIR_Get_count_impl(&status, MPI_BYTE, &last_recv_cnt);
@@ -441,12 +474,12 @@ int MPIR_Allgather_intra (
             position = 0;
             mpi_errno = MPIR_Unpack_impl(tmp_buf, tmp_buf_size, &position, recvbuf,
                                          recvcount*comm_size, recvtype);
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
         }
 #endif /* MPID_HAS_HETERO */
     }
 
-    else if (tot_bytes < MPIR_PARAM_ALLGATHER_SHORT_MSG_SIZE) {
+    else if (tot_bytes < MPIR_CVAR_ALLGATHER_SHORT_MSG_SIZE) {
         /* Short message and non-power-of-two no. of processes. Use
          * Bruck algorithm (see description above). */
 
@@ -468,7 +501,7 @@ int MPIR_Allgather_intra (
             mpi_errno = MPIR_Localcopy (sendbuf, sendcount, sendtype,
                                         tmp_buf, recvcount, recvtype);
 	    if (mpi_errno) { 
-		MPIU_ERR_POP(mpi_errno);
+		MPIR_ERR_POP(mpi_errno);
 	    }
         }
         else {
@@ -477,7 +510,7 @@ int MPIR_Allgather_intra (
                                         recvcount, recvtype, tmp_buf, 
                                         recvcount, recvtype);
 	    if (mpi_errno) { 
-		MPIU_ERR_POP(mpi_errno);
+		MPIR_ERR_POP(mpi_errno);
 	    }
         }
         
@@ -489,17 +522,17 @@ int MPIR_Allgather_intra (
             src = (rank + pof2) % comm_size;
             dst = (rank - pof2 + comm_size) % comm_size;
             
-            mpi_errno = MPIC_Sendrecv_ft(tmp_buf, curr_cnt, recvtype, dst,
+            mpi_errno = MPIC_Sendrecv(tmp_buf, curr_cnt, recvtype, dst,
                                          MPIR_ALLGATHER_TAG,
                                          ((char *)tmp_buf + curr_cnt*recvtype_extent),
                                          curr_cnt, recvtype,
-                                         src, MPIR_ALLGATHER_TAG, comm,
+                                         src, MPIR_ALLGATHER_TAG, comm_ptr,
                                          MPI_STATUS_IGNORE, errflag);
             if (mpi_errno) {
                 /* for communication errors, just record the error but continue */
-                *errflag = TRUE;
-                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
             }
             curr_cnt *= 2;
             pof2 *= 2;
@@ -512,17 +545,17 @@ int MPIR_Allgather_intra (
             src = (rank + pof2) % comm_size;
             dst = (rank - pof2 + comm_size) % comm_size;
             
-            mpi_errno = MPIC_Sendrecv_ft(tmp_buf, rem * recvcount, recvtype,
+            mpi_errno = MPIC_Sendrecv(tmp_buf, rem * recvcount, recvtype,
                                          dst, MPIR_ALLGATHER_TAG,
                                          ((char *)tmp_buf + curr_cnt*recvtype_extent),
                                          rem * recvcount, recvtype,
-                                         src, MPIR_ALLGATHER_TAG, comm,
+                                         src, MPIR_ALLGATHER_TAG, comm_ptr,
                                          MPI_STATUS_IGNORE, errflag);
             if (mpi_errno) {
                 /* for communication errors, just record the error but continue */
-                *errflag = TRUE;
-                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
             }
         }
 
@@ -533,7 +566,7 @@ int MPIR_Allgather_intra (
                   recvtype, (char *) recvbuf + rank*recvcount*recvtype_extent, 
                                        (comm_size-rank)*recvcount, recvtype);
 	if (mpi_errno) { 
-	    MPIU_ERR_POP(mpi_errno);
+	    MPIR_ERR_POP(mpi_errno);
 	}
 
         if (rank) {
@@ -542,7 +575,7 @@ int MPIR_Allgather_intra (
                                        rank*recvcount, recvtype, recvbuf,
                                        rank*recvcount, recvtype);
 	    if (mpi_errno) { 
-		MPIU_ERR_POP(mpi_errno);
+		MPIR_ERR_POP(mpi_errno);
 	    }
         }
     }
@@ -557,7 +590,7 @@ int MPIR_Allgather_intra (
                                         rank*recvcount*recvtype_extent),  
                                        recvcount, recvtype);
 	    if (mpi_errno) { 
-		MPIU_ERR_POP(mpi_errno);
+		MPIR_ERR_POP(mpi_errno);
 	    }
         }
         
@@ -571,20 +604,20 @@ int MPIR_Allgather_intra (
         j     = rank;
         jnext = left;
         for (i=1; i<comm_size; i++) {
-            mpi_errno = MPIC_Sendrecv_ft(((char *)recvbuf +
+            mpi_errno = MPIC_Sendrecv(((char *)recvbuf +
                                           j*recvcount*recvtype_extent), 
                                          recvcount, recvtype, right,
                                          MPIR_ALLGATHER_TAG, 
                                          ((char *)recvbuf +
                                           jnext*recvcount*recvtype_extent), 
                                          recvcount, recvtype, left, 
-                                         MPIR_ALLGATHER_TAG, comm,
+                                         MPIR_ALLGATHER_TAG, comm_ptr,
                                          MPI_STATUS_IGNORE, errflag);
             if (mpi_errno) {
                 /* for communication errors, just record the error but continue */
-                *errflag = TRUE;
-                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
             }
             j	    = jnext;
             jnext = (comm_size + jnext - 1) % comm_size;
@@ -597,8 +630,8 @@ int MPIR_Allgather_intra (
     MPIDU_ERR_CHECK_MULTIPLE_THREADS_EXIT( comm_ptr );
     if (mpi_errno_ret)
         mpi_errno = mpi_errno_ret;
-    else if (*errflag)
-        MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**coll_fail");
+    else if (*errflag != MPIR_ERR_NONE)
+        MPIR_ERR_SET(mpi_errno, *errflag, "**coll_fail");
 
     return mpi_errno;
 
@@ -610,7 +643,7 @@ int MPIR_Allgather_intra (
 #undef FUNCNAME
 #define FUNCNAME MPIR_Allgather_inter
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 
 /* not declared static because a machine-specific function may call this one 
    in some cases */
@@ -622,7 +655,7 @@ int MPIR_Allgather_inter (
     int recvcount,
     MPI_Datatype recvtype,
     MPID_Comm *comm_ptr,
-    int *errflag)
+    MPIR_Errflag_t *errflag)
 {
     /* Intercommunicator Allgather.
        Each group does a gather to local root with the local
@@ -649,7 +682,7 @@ int MPIR_Allgather_inter (
         MPID_Datatype_get_extent_macro( sendtype, send_extent );
         extent = MPIR_MAX(send_extent, true_extent);
 
-	MPID_Ensure_Aint_fits_in_pointer(extent * sendcount * local_size);
+	MPIU_Ensure_Aint_fits_in_pointer(extent * sendcount * local_size);
         MPIU_CHKLMEM_MALLOC(tmp_buf, void*, extent*sendcount*local_size, mpi_errno, "tmp_buf");
 
         /* adjust for potential negative lower bound in datatype */
@@ -667,9 +700,9 @@ int MPIR_Allgather_inter (
                                      sendtype, 0, newcomm_ptr, errflag);
         if (mpi_errno) {
             /* for communication errors, just record the error but continue */
-            *errflag = TRUE;
-            MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-            MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+            *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+            MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+            MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
         }
     }
 
@@ -683,9 +716,9 @@ int MPIR_Allgather_inter (
                                          sendtype, root, comm_ptr, errflag);
             if (mpi_errno) {
                 /* for communication errors, just record the error but continue */
-                *errflag = TRUE;
-                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
             }
         }
 
@@ -696,9 +729,9 @@ int MPIR_Allgather_inter (
                                          recvtype, root, comm_ptr, errflag);
             if (mpi_errno) {
                 /* for communication errors, just record the error but continue */
-                *errflag = TRUE;
-                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
             }
         }
     }
@@ -710,9 +743,9 @@ int MPIR_Allgather_inter (
                                          recvtype, root, comm_ptr, errflag);
             if (mpi_errno) {
                 /* for communication errors, just record the error but continue */
-                *errflag = TRUE;
-                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
             }
         }
 
@@ -723,9 +756,9 @@ int MPIR_Allgather_inter (
                                          sendtype, root, comm_ptr, errflag);
             if (mpi_errno) {
                 /* for communication errors, just record the error but continue */
-                *errflag = TRUE;
-                MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**fail");
-                MPIU_ERR_ADD(mpi_errno_ret, mpi_errno);
+                *errflag = MPIR_ERR_GET_CLASS(mpi_errno);
+                MPIR_ERR_SET(mpi_errno, *errflag, "**fail");
+                MPIR_ERR_ADD(mpi_errno_ret, mpi_errno);
             }
         }
     }
@@ -734,8 +767,8 @@ int MPIR_Allgather_inter (
     MPIU_CHKLMEM_FREEALL();
     if (mpi_errno_ret)
         mpi_errno = mpi_errno_ret;
-    else if (*errflag)
-        MPIU_ERR_SET(mpi_errno, MPI_ERR_OTHER, "**coll_fail");
+    else if (*errflag != MPIR_ERR_NONE)
+        MPIR_ERR_SET(mpi_errno, *errflag, "**coll_fail");
 
     return mpi_errno;
 
@@ -751,10 +784,10 @@ int MPIR_Allgather_inter (
 #undef FUNCNAME
 #define FUNCNAME MPIR_Allgather
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                    void *recvbuf, int recvcount, MPI_Datatype recvtype,
-                   MPID_Comm *comm_ptr, int *errflag)
+                   MPID_Comm *comm_ptr, MPIR_Errflag_t *errflag)
 {
     int mpi_errno = MPI_SUCCESS;
 
@@ -763,13 +796,13 @@ int MPIR_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
         mpi_errno = MPIR_Allgather_intra(sendbuf, sendcount, sendtype,
                                          recvbuf, recvcount, recvtype,
                                          comm_ptr, errflag);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     } else {
         /* intercommunicator */
         mpi_errno = MPIR_Allgather_inter(sendbuf, sendcount, sendtype,
                                          recvbuf, recvcount, recvtype,
                                          comm_ptr, errflag);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     }
 
 fn_exit:
@@ -785,10 +818,10 @@ fn_fail:
 #undef FUNCNAME
 #define FUNCNAME MPIR_Allgather_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Allgather_impl(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                         void *recvbuf, int recvcount, MPI_Datatype recvtype,
-                        MPID_Comm *comm_ptr, int *errflag)
+                        MPID_Comm *comm_ptr, MPIR_Errflag_t *errflag)
 {
     int mpi_errno = MPI_SUCCESS;
 
@@ -798,13 +831,13 @@ int MPIR_Allgather_impl(const void *sendbuf, int sendcount, MPI_Datatype sendtyp
 	mpi_errno = comm_ptr->coll_fns->Allgather(sendbuf, sendcount, sendtype,
                                                   recvbuf, recvcount, recvtype,
                                                   comm_ptr, errflag);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	/* --END USEREXTENSION-- */
     } else {
         mpi_errno = MPIR_Allgather(sendbuf, sendcount, sendtype,
                                    recvbuf, recvcount, recvtype,
                                    comm_ptr, errflag);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     }
 
 fn_exit:
@@ -819,7 +852,7 @@ fn_fail:
 #undef FUNCNAME
 #define FUNCNAME MPI_Allgather
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
 MPI_Allgather - Gathers data from all tasks and distribute the combined
     data to all tasks
@@ -869,12 +902,12 @@ int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
 {
     int mpi_errno = MPI_SUCCESS;
     MPID_Comm *comm_ptr = NULL;
-    int errflag = FALSE;
+    MPIR_Errflag_t errflag = MPIR_ERR_NONE;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_ALLGATHER);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_COLL_FUNC_ENTER(MPID_STATE_MPI_ALLGATHER);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -898,11 +931,21 @@ int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
         {
             MPID_Datatype *recvtype_ptr=NULL, *sendtype_ptr=NULL;
 
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
-	    if (comm_ptr->comm_kind == MPID_INTERCOMM)
+            if (comm_ptr->comm_kind == MPID_INTERCOMM) {
                 MPIR_ERRTEST_SENDBUF_INPLACE(sendbuf, sendcount, mpi_errno);
+            } else {
+                /* catch common aliasing cases */
+                if (sendbuf != MPI_IN_PLACE && sendtype == recvtype &&
+                        recvcount != 0 && sendcount != 0) {
+                    int recvtype_size;
+                    MPID_Datatype_get_size_macro(recvtype, recvtype_size);
+                    MPIR_ERRTEST_ALIAS_COLL(sendbuf, (char*)recvbuf + comm_ptr->rank*recvcount*recvtype_size, mpi_errno);
+                }
+            }
+
             if (sendbuf != MPI_IN_PLACE)
 	    {
                 MPIR_ERRTEST_COUNT(sendcount, mpi_errno);
@@ -930,10 +973,6 @@ int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                 if (mpi_errno != MPI_SUCCESS) goto fn_fail;
             }
 	    MPIR_ERRTEST_USERBUFFER(recvbuf,recvcount,recvtype,mpi_errno);
-
-            /* catch common aliasing cases */
-            if (sendbuf != MPI_IN_PLACE && sendtype == recvtype && recvcount != 0 && sendcount != 0)
-                MPIR_ERRTEST_ALIAS_COLL(sendbuf,recvbuf,mpi_errno);
         }
         MPID_END_ERROR_CHECKS;
     }
@@ -950,7 +989,7 @@ int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
     
   fn_exit:
     MPID_MPI_COLL_FUNC_EXIT(MPID_STATE_MPI_ALLGATHER);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

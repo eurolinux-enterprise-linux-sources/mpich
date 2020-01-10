@@ -5,12 +5,13 @@
  */
 
 #include "mpid_nem_impl.h"
+#undef utarray_oom
 #define utarray_oom() do { goto fn_oom; } while (0)
 #include "mpiu_utarray.h"
 
 #define NULL_CONTEXT_ID -1
 
-static int barrier (MPID_Comm *comm_ptr, int *errflag);
+static int barrier (MPID_Comm *comm_ptr, MPIR_Errflag_t *errflag);
 static int alloc_barrier_vars (MPID_Comm *comm, MPID_nem_barrier_vars_t **vars);
 
 UT_array *coll_fns_array = NULL;
@@ -18,7 +19,7 @@ UT_array *coll_fns_array = NULL;
 #undef FUNCNAME
 #define FUNCNAME MPIDI_CH3I_comm_create
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIDI_CH3I_comm_create(MPID_Comm *comm, void *param)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -27,9 +28,6 @@ int MPIDI_CH3I_comm_create(MPID_Comm *comm, void *param)
 
     MPIDI_FUNC_ENTER(MPID_STATE_MPIDI_CH3I_COMM_CREATE);
 
-    /* Use the VC's eager threshold by default. */
-    comm->ch.eager_max_msg_sz = -1;
-
 #ifndef ENABLED_SHM_COLLECTIVES
     goto fn_exit;
 #endif
@@ -37,7 +35,7 @@ int MPIDI_CH3I_comm_create(MPID_Comm *comm, void *param)
     /* set up intranode barrier iff this is an intranode communicator */
     if (comm->hierarchy_kind == MPID_HIERARCHY_NODE) {
         MPID_Collops *cf, **cf_p;
-        comm->ch.barrier_vars = NULL;
+        comm->dev.ch.barrier_vars = NULL;
 
         /* We can't use a static coll_fns override table for our collectives
            because we store a pointer to the previous coll_fns in our coll_fns
@@ -78,7 +76,7 @@ int MPIDI_CH3I_comm_create(MPID_Comm *comm, void *param)
     MPIDI_FUNC_EXIT(MPID_STATE_MPIDI_CH3I_COMM_CREATE);
     return mpi_errno;
  fn_oom: /* out-of-memory handler for utarray operations */
-    MPIU_ERR_SET1(mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "utarray");
+    MPIR_ERR_SET1(mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "utarray");
  fn_fail:
     MPIU_CHKPMEM_REAP();
     goto fn_exit;
@@ -87,7 +85,7 @@ int MPIDI_CH3I_comm_create(MPID_Comm *comm, void *param)
 #undef FUNCNAME
 #define FUNCNAME MPIDI_CH3I_comm_destroy
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIDI_CH3I_comm_destroy(MPID_Comm *comm, void *param)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -111,9 +109,9 @@ int MPIDI_CH3I_comm_destroy(MPID_Comm *comm, void *param)
             MPIU_Free(cf);
         }
             
-        if (comm->ch.barrier_vars && OPA_fetch_and_decr_int(&comm->ch.barrier_vars->usage_cnt) == 1) {
+        if (comm->dev.ch.barrier_vars && OPA_fetch_and_decr_int(&comm->dev.ch.barrier_vars->usage_cnt) == 1) {
             OPA_write_barrier();
-            OPA_store_int(&comm->ch.barrier_vars->context_id, NULL_CONTEXT_ID);
+            OPA_store_int(&comm->dev.ch.barrier_vars->context_id, NULL_CONTEXT_ID);
         }
     }
     
@@ -125,7 +123,7 @@ int MPIDI_CH3I_comm_destroy(MPID_Comm *comm, void *param)
 #undef FUNCNAME
 #define FUNCNAME alloc_barrier_vars
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 static int alloc_barrier_vars (MPID_Comm *comm, MPID_nem_barrier_vars_t **vars)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -162,8 +160,8 @@ static int alloc_barrier_vars (MPID_Comm *comm, MPID_nem_barrier_vars_t **vars)
 #undef FUNCNAME
 #define FUNCNAME barrier
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
-static int barrier(MPID_Comm *comm_ptr, int *errflag)
+#define FCNAME MPL_QUOTE(FUNCNAME)
+static int barrier(MPID_Comm *comm_ptr, MPIR_Errflag_t *errflag)
 {
     int mpi_errno = MPI_SUCCESS;
     MPID_nem_barrier_vars_t *barrier_vars;
@@ -180,11 +178,11 @@ static int barrier(MPID_Comm *comm_ptr, int *errflag)
        time */
     MPIDU_ERR_CHECK_MULTIPLE_THREADS_ENTER (comm_ptr);
 
-    if (comm_ptr->ch.barrier_vars == NULL) {
-        mpi_errno = alloc_barrier_vars (comm_ptr, &comm_ptr->ch.barrier_vars);
-        if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (comm_ptr->dev.ch.barrier_vars == NULL) {
+        mpi_errno = alloc_barrier_vars (comm_ptr, &comm_ptr->dev.ch.barrier_vars);
+        if (mpi_errno) MPIR_ERR_POP (mpi_errno);
 
-        if (comm_ptr->ch.barrier_vars == NULL) {
+        if (comm_ptr->dev.ch.barrier_vars == NULL) {
             /* no barrier_vars left -- revert to default barrier. */
             /* FIXME: need a better solution here.  e.g., allocate
                some barrier_vars on the first barrier for the life of
@@ -194,16 +192,16 @@ static int barrier(MPID_Comm *comm_ptr, int *errflag)
             */
             if (comm_ptr->coll_fns->prev_coll_fns->Barrier != NULL) {
                 mpi_errno = comm_ptr->coll_fns->prev_coll_fns->Barrier(comm_ptr, errflag);
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
             } else {
                 mpi_errno = MPIR_Barrier_intra(comm_ptr, errflag);
-                if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP (mpi_errno);
             }
             goto fn_exit;
         }
     }
 
-    barrier_vars = comm_ptr->ch.barrier_vars;
+    barrier_vars = comm_ptr->dev.ch.barrier_vars;
 
     sense = OPA_load_int(&barrier_vars->sig);
     OPA_read_barrier();
@@ -232,7 +230,7 @@ static int barrier(MPID_Comm *comm_ptr, int *errflag)
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_barrier_vars_init
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPID_nem_barrier_vars_init (MPID_nem_barrier_vars_t *barrier_region)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -257,7 +255,7 @@ int MPID_nem_barrier_vars_init (MPID_nem_barrier_vars_t *barrier_region)
 #undef FUNCNAME
 #define FUNCNAME nem_coll_finalize
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 static int nem_coll_finalize(void *param ATTRIBUTE((unused)))
 {
     int mpi_errno = MPI_SUCCESS;
@@ -278,7 +276,7 @@ static int nem_coll_finalize(void *param ATTRIBUTE((unused)))
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_coll_init
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPID_nem_coll_init(void)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -293,7 +291,7 @@ int MPID_nem_coll_init(void)
     MPIDI_FUNC_EXIT(MPID_STATE_MPID_NEM_COLL_INIT);
     return mpi_errno;
  fn_oom: /* out-of-memory handler for utarray operations */
-    MPIU_ERR_SET1(mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "utarray");
+    MPIR_ERR_SET1(mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "utarray");
  fn_fail:
     goto fn_exit;
 }

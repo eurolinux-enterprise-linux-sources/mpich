@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Pack  MPI_Pack
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Pack as PMPI_Pack
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Pack(const void *inbuf, int incount, MPI_Datatype datatype, void *outbuf,
+             int outsize, int *position, MPI_Comm comm) __attribute__((weak,alias("PMPI_Pack")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,13 +29,13 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Pack_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Pack_impl(const void *inbuf,
-                   int incount,
+                   MPI_Aint incount,
                    MPI_Datatype datatype,
                    void *outbuf,
-                   int outsize,
-                   int *position)
+                   MPI_Aint outsize,
+                   MPI_Aint *position)
 {
     int mpi_errno = MPI_SUCCESS;
     MPI_Aint first, last;
@@ -70,10 +73,10 @@ int MPIR_Pack_impl(const void *inbuf,
     /* TODO: CHECK RETURN VALUES?? */
     /* TODO: SHOULD THIS ALL BE IN A MPID_PACK??? */
     segp = MPID_Segment_alloc();
-    MPIU_ERR_CHKANDJUMP1(segp == NULL, mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "MPID_Segment");
+    MPIR_ERR_CHKANDJUMP1(segp == NULL, mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "MPID_Segment");
     
     mpi_errno = MPID_Segment_init(inbuf, incount, datatype, segp, 0);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* NOTE: the use of buffer values and positions in MPI_Pack and in
      * MPID_Segment_pack are quite different.  See code or docs or something.
@@ -82,7 +85,7 @@ int MPIR_Pack_impl(const void *inbuf,
     last  = SEGMENT_IGNORE_LAST;
 
     /* Ensure that pointer increment fits in a pointer */
-    MPID_Ensure_Aint_fits_in_pointer((MPI_VOID_PTR_CAST_TO_MPI_AINT outbuf) +
+    MPIU_Ensure_Aint_fits_in_pointer((MPIU_VOID_PTR_CAST_TO_MPI_AINT outbuf) +
 				     (MPI_Aint) *position);
 
     MPID_Segment_pack(segp,
@@ -91,7 +94,7 @@ int MPIR_Pack_impl(const void *inbuf,
 		      (void *) ((char *) outbuf + *position));
 
     /* Ensure that calculation fits into an int datatype. */
-    MPID_Ensure_Aint_fits_in_int((MPI_Aint)*position + last);
+    MPIU_Ensure_Aint_fits_in_int((MPI_Aint)*position + last);
 
     *position = (int)((MPI_Aint)*position + last);
 
@@ -108,7 +111,7 @@ int MPIR_Pack_impl(const void *inbuf,
 #undef FUNCNAME
 #define FUNCNAME MPI_Pack
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
     MPI_Pack - Packs a datatype into contiguous memory
 
@@ -151,6 +154,7 @@ int MPI_Pack(const void *inbuf,
 	     MPI_Comm comm)
 {
     int mpi_errno = MPI_SUCCESS;
+    MPI_Aint position_x;
     MPID_Comm *comm_ptr = NULL;
     
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_PACK);
@@ -187,7 +191,7 @@ int MPI_Pack(const void *inbuf,
 	    MPIR_ERRTEST_ARGNULL(position, "position", mpi_errno);
             /* Validate comm_ptr */
 	    /* If comm_ptr is not valid, it will be reset to null */
-            MPID_Comm_valid_ptr(comm_ptr, mpi_errno);
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
 	    if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
 	    MPIR_ERRTEST_DATATYPE(datatype, "datatype", mpi_errno);
@@ -216,20 +220,20 @@ int MPI_Pack(const void *inbuf,
 
 	if (tmp_sz * incount > outsize - *position) {
 	    if (*position < 0) {
-		MPIU_ERR_SETANDJUMP1(mpi_errno,MPI_ERR_ARG,
+		MPIR_ERR_SETANDJUMP1(mpi_errno,MPI_ERR_ARG,
 				     "**argposneg","**argposneg %d",
 				     *position);
 	    }
 	    else if (outsize < 0) {
-		MPIU_ERR_SETANDJUMP2(mpi_errno,MPI_ERR_ARG,"**argneg",
+		MPIR_ERR_SETANDJUMP2(mpi_errno,MPI_ERR_ARG,"**argneg",
 				     "**argneg %s %d","outsize",outsize);
 	    }
 	    else if (incount < 0) {
-		MPIU_ERR_SETANDJUMP2(mpi_errno,MPI_ERR_ARG,"**argneg",
+		MPIR_ERR_SETANDJUMP2(mpi_errno,MPI_ERR_ARG,"**argneg",
 				     "**argneg %s %d","incount",incount);
 	    }
 	    else {
-		MPIU_ERR_SETANDJUMP2(mpi_errno,MPI_ERR_ARG,"**argpackbuf",
+		MPIR_ERR_SETANDJUMP2(mpi_errno,MPI_ERR_ARG,"**argpackbuf",
 				     "**argpackbuf %d %d", tmp_sz * incount,
 				     outsize - *position);
 	    }
@@ -240,7 +244,9 @@ int MPI_Pack(const void *inbuf,
 
     /* ... body of routine ... */
 
-    mpi_errno = MPIR_Pack_impl(inbuf, incount, datatype, outbuf, outsize, position);
+    position_x = *position;
+    mpi_errno = MPIR_Pack_impl(inbuf, incount, datatype, outbuf, outsize, &position_x);
+    MPIU_Assign_trunc(*position, position_x, int);
     if (mpi_errno) goto fn_fail;
     
    /* ... end of body of routine ... */

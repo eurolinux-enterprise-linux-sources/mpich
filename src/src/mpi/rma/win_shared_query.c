@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Win_shared_query  MPI_Win_shared_query
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Win_shared_query as PMPI_Win_shared_query
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Win_shared_query(MPI_Win win, int rank, MPI_Aint *size, int *disp_unit, void *baseptr) __attribute__((weak,alias("PMPI_Win_shared_query")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -78,7 +80,7 @@ int MPI_Win_shared_query(MPI_Win win, int rank, MPI_Aint *size, int *disp_unit, 
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_RMA_FUNC_ENTER(MPID_STATE_MPI_WIN_SHARED_QUERY);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -120,15 +122,14 @@ int MPI_Win_shared_query(MPI_Win win, int rank, MPI_Aint *size, int *disp_unit, 
 
     /* ... body of routine ...  */
     
-    mpi_errno = MPIU_RMA_CALL(win_ptr,
-                              Win_shared_query(win_ptr, rank, size, disp_unit, baseptr));
+    mpi_errno = MPID_Win_shared_query(win_ptr, rank, size, disp_unit, baseptr);
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_RMA_FUNC_EXIT(MPID_STATE_MPI_WIN_SHARED_QUERY);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

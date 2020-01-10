@@ -92,7 +92,6 @@ confdb_dirs="${confdb_dirs} src/mpl/confdb"
 confdb_dirs="${confdb_dirs} src/pm/hydra/confdb"
 confdb_dirs="${confdb_dirs} src/pm/hydra/mpl/confdb"
 confdb_dirs="${confdb_dirs} test/mpi/confdb"
-confdb_dirs="${confdb_dirs} src/armci/m4"
 
 # hydra's copy of mpl
 sync_external src/mpl src/pm/hydra/mpl
@@ -106,6 +105,7 @@ done
 if [ -f maint/version.m4 ] ; then
     cp -pPR maint/version.m4 src/pm/hydra/version.m4
     cp -pPR maint/version.m4 src/mpi/romio/version.m4
+    cp -pPR maint/version.m4 test/mpi/version.m4
 fi
 
 # Now sanity check that some of the above sync was successful
@@ -144,12 +144,11 @@ echo "done"
 # Default choices
 do_bindings=yes
 do_geterrmsgs=yes
-do_getparms=yes
+do_getcvars=yes
 do_f77=yes
 do_f77tof90=yes
 do_build_configure=yes
 do_genstates=yes
-do_smpdversion=yes
 do_atdir_check=no
 do_atver_check=yes
 do_subcfg_m4=yes
@@ -160,7 +159,7 @@ export do_build_configure
 MAKE=${MAKE-make}
 
 # external packages that require autogen.sh to be run for each of them
-externals="src/pm/hydra src/mpi/romio src/armci src/pm/mpd src/openpa"
+externals="src/pm/hydra src/mpi/romio src/openpa"
 # amdirs are the directories that make use of autoreconf
 amdirs=". src/mpl src/util/logging/rlog"
 
@@ -173,7 +172,7 @@ export autoreconf_args
 
 # List of steps that we will consider (We do not include depend
 # because the values for depend are not just yes/no)
-AllSteps="geterrmsgs bindings f77 f77tof90 build_configure genstates smpdversion getparms"
+AllSteps="geterrmsgs bindings f77 f77tof90 build_configure genstates getparms"
 stepsCleared=no
 
 for arg in "$@" ; do
@@ -507,7 +506,7 @@ fi
 
 echo_n "Checking for automake version... "
 recreate_tmp
-ver=1.12.3
+ver=1.15
 cat > .tmp/configure.ac<<EOF
 AC_INIT(testver,1.0)
 AC_CONFIG_AUX_DIR([m4])
@@ -545,7 +544,7 @@ fi
 
 echo_n "Checking for libtool version... "
 recreate_tmp
-ver=2.4
+ver=2.4.3
 cat <<EOF >.tmp/configure.ac
 AC_INIT(testver,1.0)
 AC_CONFIG_AUX_DIR([m4])
@@ -650,24 +649,6 @@ fi
 
 
 ########################################################################
-## Update SMPD version
-########################################################################
-
-if [ "$do_smpdversion" = yes ] ; then
-    echo_n "Creating src/pm/smpd/smpd_version.h... "
-    smpdVersion=${MPICH_VERSION}
-    cat >src/pm/smpd/smpd_version.h <<EOF
-/* -*- Mode: C; c-basic-offset:4 ; -*- */
-/*  
- *  (C) 2005 by Argonne National Laboratory.
- *      See COPYRIGHT in top-level directory.
- */
-#define SMPD_VERSION "$smpdVersion"
-EOF
-    echo "done"
-fi
-
-########################################################################
 ## Building subsys_include.m4
 ########################################################################
 if [ "X$do_subcfg_m4" = Xyes ] ; then
@@ -675,6 +656,15 @@ if [ "X$do_subcfg_m4" = Xyes ] ; then
     ./maint/gen_subcfg_m4
     echo "done"
 fi
+
+
+########################################################################
+## Building ROMIO glue code
+########################################################################
+echo_n "Building ROMIO glue code... "
+( cd src/glue/romio && chmod a+x ./all_romio_symbols && ./all_romio_symbols ../../mpi/romio/include/mpio.h.in )
+echo "done"
+
 
 ########################################################################
 ## Building non-C interfaces
@@ -686,31 +676,47 @@ if [ $do_bindings = "yes" ] ; then
     build_f90=no
     build_cxx=no
     if [ $do_f77 = "yes" ] ; then
-        if [ ! -s src/binding/f77/abortf.c ] ; then 
+        if [ ! -s src/binding/fortran/mpif_h/abortf.c ] ; then
 	    build_f77=yes
-        elif find src/binding/f77 -name 'buildiface' -newer 'src/binding/f77/abortf.c' >/dev/null 2>&1 ; then
+        elif find src/binding/fortran/mpif_h -name 'buildiface' -newer 'src/binding/fortran/mpif_h/abortf.c' >/dev/null 2>&1 ; then
 	    build_f77=yes
         fi
-        if [ ! -s src/binding/f90/mpi_base.f90 ] ; then
+        if [ ! -s src/binding/fortran/use_mpi/mpi_base.f90 ] ; then
  	    build_f90=yes
-        elif find src/binding/f90 -name 'buildiface' -newer 'src/binding/f90/mpi_base.f90' >/dev/null 2>&1 ; then
+        elif find src/binding/fortran/use_mpi -name 'buildiface' -newer 'src/binding/fortran/use_mpi/mpi_base.f90' >/dev/null 2>&1 ; then
 	    build_f90=yes
         fi
- 
+        if [ ! -s src/binding/fortran/use_mpi_f08/wrappers_c/cdesc.c ] ; then
+	    build_f08=yes
+        elif find src/binding/fortran/use_mpi_f08 -name 'buildiface' -newer 'src/binding/fortran/use_mpi_f08/wrappers_c/cdesc.c' >/dev/null 2>&1 ; then
+	    build_f08=yes
+        fi
     fi
 
     if [ $build_f77 = "yes" ] ; then
 	echo_n "Building Fortran 77 interface... "
-	( cd src/binding/f77 && chmod a+x ./buildiface && ./buildiface )
+	( cd src/binding/fortran/mpif_h && chmod a+x ./buildiface && ./buildiface )
 	echo "done"
     fi
     if [ $build_f90 = "yes" ] ; then
 	echo_n "Building Fortran 90 interface... "
 	# Remove any copy of mpi_base.f90 (this is used to handle the
 	# Double precision vs. Real*8 option
-	rm -f src/binding/f90/mpi_base.f90.orig
-	( cd src/binding/f90 && chmod a+x ./buildiface && ./buildiface )
-	( cd src/binding/f90 && ../f77/buildiface -infile=cf90t.h -deffile=cf90tdefs)
+	rm -f src/binding/fortran/use_mpi/mpi_base.f90.orig
+	( cd src/binding/fortran/use_mpi && chmod a+x ./buildiface && ./buildiface )
+	( cd src/binding/fortran/use_mpi && ../mpif_h/buildiface -infile=cf90t.h -deffile=cf90tdefs)
+	echo "done"
+    fi
+    if [ $build_f08 = "yes" ] ; then
+	echo_n "Building Fortran 08 interface... "
+	# Top-level files
+	( cd src/binding/fortran/use_mpi_f08 && chmod a+x ./buildiface && ./buildiface )
+        # Delete the old Makefile.mk
+        ( rm -f src/binding/fortran/use_mpi_f08/wrappers_c/Makefile.mk )
+        # Execute once for mpi.h.in ...
+	( cd src/binding/fortran/use_mpi_f08/wrappers_c && chmod a+x ./buildiface && ./buildiface ../../../../include/mpi.h.in )
+        # ... and once for mpio.h.in
+	( cd src/binding/fortran/use_mpi_f08/wrappers_c && chmod a+x ./buildiface && ./buildiface ../../../../mpi/romio/include/mpio.h.in )
 	echo "done"
     fi
 
@@ -722,7 +728,7 @@ if [ $do_bindings = "yes" ] ; then
     if [ $build_cxx = "yes" ] ; then
 	echo_n "Building C++ interface... "
 	( cd src/binding/cxx && chmod a+x ./buildiface &&
-	  ./buildiface -nosep $otherarg )
+	  ./buildiface -nosep -initfile=cxx.vlist )
 	echo "done"
     fi
 fi
@@ -841,13 +847,13 @@ fi
 echo "done"
 
 # new parameter code
-echo_n "Generating parameter handling code... "
-if test -x maint/genparams -a "$do_getparms" = "yes" ; then
-    if ./maint/genparams ; then
+echo_n "Extracting control variables (cvar) ... "
+if test -x maint/extractcvars -a "$do_getcvars" = "yes" ; then
+    if ./maint/extractcvars --dirs="`cat maint/cvardirs`"; then
         echo "done"
     else
         echo "failed"
-        error "unable to generate parameter handling code"
+        error "unable to extract control variables"
         exit 1
     fi
 else
@@ -863,8 +869,13 @@ if [ -x ./maint/f77tof90 -a $do_f77tof90 = "yes" ] ; then
         if [ ! -d test/mpi/f90/$leafDir ] ; then
 	    mkdir test/mpi/f90/$leafDir
         fi
-        maint/f77tof90 $dir test/mpi/f90/$leafDir Makefile.am Makefile.ap
-        echo "timestamp" > test/mpi/f90/$leafDir/Makefile.am-stamp
+        if maint/f77tof90 $dir test/mpi/f90/$leafDir Makefile.am Makefile.ap ; then
+            echo "timestamp" > test/mpi/f90/$leafDir/Makefile.am-stamp
+        else
+            echo "failed"
+            error "maint/f77tof90 $dir failed!"
+            exit 1
+        fi
     done
     for dir in test/mpi/errors/f77/* ; do
         if [ ! -d $dir ] ; then continue ; fi
@@ -872,8 +883,13 @@ if [ -x ./maint/f77tof90 -a $do_f77tof90 = "yes" ] ; then
         if [ ! -d test/mpi/errors/f90/$leafDir ] ; then
 	    mkdir test/mpi/errors/f90/$leafDir
         fi
-        maint/f77tof90 $dir test/mpi/errors/f90/$leafDir Makefile.am Makefile.ap
-        echo "timestamp" > test/mpi/errors/f90/$leafDir/Makefile.am-stamp
+        if maint/f77tof90 $dir test/mpi/errors/f90/$leafDir Makefile.am Makefile.ap ; then
+            echo "timestamp" > test/mpi/errors/f90/$leafDir/Makefile.am-stamp
+        else
+            echo "failed"
+            error "maint/f77tof90 $dir failed!"
+            exit 1
+        fi
     done
     echo "done"
 fi
@@ -903,6 +919,33 @@ if [ "$do_build_configure" = "yes" ] ; then
 	    echo "------------------------------------------------------------------------"
 	    echo "running $autoreconf in $amdir"
             (cd $amdir && $autoreconf $autoreconf_args) || exit 1
+            # Patching libtool.m4
+            # This works with libtool versions 2.4 - 2.4.2.
+            # Older versions are not supported to build mpich.
+            # Newer versions should have this patch already included.
+            if [ -f $amdir/confdb/libtool.m4 ] ; then
+                # There is no need to patch if we're not going to use Fortran.
+                ifort_patch_requires_rebuild=no
+                if [ $do_bindings = "yes" ] ; then
+                    echo_n "Patching libtool.m4 for compatibility with ifort on OSX... "
+                    patch -N -s -l $amdir/confdb/libtool.m4 maint/darwin-ifort.patch
+                    if [ $? -eq 0 ] ; then
+                        ifort_patch_requires_rebuild=yes
+                        # Remove possible leftovers, which don't imply a failure
+                        rm -f $amdir/confdb/libtool.m4.orig
+                        echo "done"
+                    else
+                        echo "failed"
+                    fi
+                fi
+
+                if [ $ifort_patch_requires_rebuild = "yes" ] ; then
+                    # Rebuild configure
+                    (cd $amdir && $autoconf -f) || exit 1
+                    # Reset libtool.m4 timestamps to avoid confusing make
+                    touch -r $amdir/confdb/ltversion.m4 $amdir/confdb/libtool.m4
+                fi
+            fi
 	fi
     done
 fi

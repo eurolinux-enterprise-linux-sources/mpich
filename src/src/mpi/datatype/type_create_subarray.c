@@ -13,6 +13,10 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_create_subarray  MPI_Type_create_subarray
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_create_subarray as PMPI_Type_create_subarray
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_create_subarray(int ndims, const int array_of_sizes[],
+                             const int array_of_subsizes[], const int array_of_starts[],
+                             int order, MPI_Datatype oldtype, MPI_Datatype *newtype) __attribute__((weak,alias("PMPI_Type_create_subarray")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -68,8 +72,7 @@ int MPI_Type_create_subarray(int ndims,
 
     /* these variables are from the original version in ROMIO */
     MPI_Aint size, extent, disps[3];
-    int blklens[3];
-    MPI_Datatype tmp1, tmp2, types[3];
+    MPI_Datatype tmp1, tmp2;
 
 #   ifdef HAVE_ERROR_CHECKING
     MPI_Aint   size_with_aint;
@@ -80,21 +83,20 @@ int MPI_Type_create_subarray(int ndims,
     int *ints;
     MPID_Datatype *new_dtp;
 
-    MPID_Datatype *datatype_ptr = NULL;
     MPIU_CHKLMEM_DECL(1);
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_CREATE_SUBARRAY);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_CREATE_SUBARRAY);
 
-    /* Get handles to MPI objects. */
-    MPID_Datatype_get_ptr(oldtype, datatype_ptr);
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
 	    /* Check parameters */
 	    MPIR_ERRTEST_ARGNONPOS(ndims, "ndims", mpi_errno, MPI_ERR_DIMS);
 	    MPIR_ERRTEST_ARGNULL(array_of_sizes, "array_of_sizes", mpi_errno);
@@ -166,6 +168,9 @@ int MPI_Type_create_subarray(int ndims,
                 goto fn_fail;
             }
 
+            /* Get handles to MPI objects. */
+            MPID_Datatype_get_ptr(oldtype, datatype_ptr);
+
             /* Validate datatype_ptr */
             MPID_Datatype_valid_ptr(datatype_ptr, mpi_errno);
 	    /* If datatype_ptr is not valid, it will be reset to null */
@@ -194,7 +199,7 @@ int MPI_Type_create_subarray(int ndims,
 					 0, /* stride in types */
 					 oldtype,
 					 &tmp1);
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 	    size = ((MPI_Aint)(array_of_sizes[0])) * extent;
 	    for (i=2; i<ndims; i++) {
@@ -205,12 +210,12 @@ int MPI_Type_create_subarray(int ndims,
 					     1, /* stride in bytes */
 					     tmp1,
 					     &tmp2);
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 		MPIR_Type_free_impl(&tmp1);
 		tmp1 = tmp2;
 	    }
 	}
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	
 	/* add displacement and UB */
 	
@@ -228,7 +233,7 @@ int MPI_Type_create_subarray(int ndims,
 	    mpi_errno = MPID_Type_contiguous(array_of_subsizes[0],
 					     oldtype,
 					     &tmp1);
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 	}
 	else {
@@ -238,7 +243,7 @@ int MPI_Type_create_subarray(int ndims,
 					 0, /* stride in types */
 					 oldtype,
 					 &tmp1);
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 	    size = (MPI_Aint)(array_of_sizes[ndims-1]) * extent;
 	    for (i=ndims-3; i>=0; i--) {
@@ -249,7 +254,7 @@ int MPI_Type_create_subarray(int ndims,
 					     1,    /* stride in bytes */
 					     tmp1, /* old type */
 					     &tmp2);
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 		MPIR_Type_free_impl(&tmp1);
 		tmp1 = tmp2;
@@ -272,29 +277,23 @@ int MPI_Type_create_subarray(int ndims,
     for (i=0; i<ndims; i++) disps[2] *= (MPI_Aint)(array_of_sizes[i]);
 
     disps[0] = 0;
-    blklens[0] = blklens[1] = blklens[2] = 1;
-    types[0] = MPI_LB;
-    types[1] = tmp1;
-    types[2] = MPI_UB;
 
-    /* TODO:
-     * if we were to do all this as an mpid function, we could just
-     * directly adjust the LB and UB in the MPID_Datatype structure
-     * instead of jumping through this hoop.
-     *
-     * i suppose we could do the same thing here...
-     *
-     * another alternative would be to use MPID_Type_create_resized()
-     * instead of building the struct.  that would also be cleaner.
-     */
-    mpi_errno = MPID_Type_struct(3,
-				 blklens,
-				 disps,
-				 types,
-				 &new_handle);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+/* Instead of using MPI_LB/MPI_UB, which have been removed from MPI in MPI-3,
+   use MPI_Type_create_resized. Use hindexed_block to set the starting displacement
+   of the datatype (disps[1]) and type_create_resized to set lb to 0 (disps[0])
+   and extent to disps[2], which makes ub = disps[2].
+ */
+
+    mpi_errno = MPID_Type_blockindexed(1, 1, &disps[1],
+                                       1, /* 1 means disp is in bytes */
+                                       tmp1, &tmp2);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
+
+    mpi_errno = MPID_Type_create_resized(tmp2, 0, disps[2], &new_handle);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     MPIR_Type_free_impl(&tmp1);
+    MPIR_Type_free_impl(&tmp2);
 
     /* at this point we have the new type, and we've cleaned up any
      * intermediate types created in the process.  we just need to save
@@ -325,16 +324,16 @@ int MPI_Type_create_subarray(int ndims,
 					   ints,
 					   NULL,
 					   &oldtype);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 
-    MPIU_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
+    MPID_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
     /* ... end of body of routine ... */
 
   fn_exit:
     MPIU_CHKLMEM_FREEALL();
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_CREATE_SUBARRAY);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

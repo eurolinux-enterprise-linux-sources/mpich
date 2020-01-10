@@ -1,0 +1,32 @@
+From d3d7f0d571607c3547396045093c77364cfaec0b Mon Sep 17 00:00:00 2001
+From: Ken Raffenetti <raffenet@mcs.anl.gov>
+Date: Fri, 28 Aug 2015 14:28:37 -0700
+Subject: [PATCH] pm/remshell: include MPL when linking
+
+---
+ src/pm/remshell/Makefile.mk | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/pm/remshell/Makefile.mk b/src/pm/remshell/Makefile.mk
+index ea366a9e..0ec937d9 100644
+--- a/src/pm/remshell/Makefile.mk
++++ b/src/pm/remshell/Makefile.mk
+@@ -16,13 +16,13 @@ if BUILD_PM_REMSHELL
+ if PRIMARY_PM_REMSHELL
+ bin_PROGRAMS += src/pm/remshell/mpiexec
+ src_pm_remshell_mpiexec_SOURCES = src/pm/remshell/mpiexec.c 
+-src_pm_remshell_mpiexec_LDADD = src/pm/util/libmpiexec.a
++src_pm_remshell_mpiexec_LDADD = src/pm/util/libmpiexec.a $(mpllib)
+ # we may not want to add AM_CPPFLAGS for this program
+ src_pm_remshell_mpiexec_CPPFLAGS = $(common_pm_includes) $(AM_CPPFLAGS)
+ else !PRIMARY_PM_REMSHELL
+ bin_PROGRAMS += src/pm/remshell/mpiexec.remshell
+ src_pm_remshell_mpiexec_remshell_SOURCES = src/pm/remshell/mpiexec.c 
+-src_pm_remshell_mpiexec_remshell_LDADD = src/pm/util/libmpiexec.a
++src_pm_remshell_mpiexec_remshell_LDADD = src/pm/util/libmpiexec.a $(mpllib)
+ # we may not want to add AM_CPPFLAGS for this program
+ src_pm_remshell_mpiexec_remshell_CPPFLAGS = $(common_pm_includes) $(AM_CPPFLAGS)
+ endif !PRIMARY_PM_REMSHELL
+-- 
+1.9.1
+

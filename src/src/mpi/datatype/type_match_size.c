@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_match_size  MPI_Type_match_size
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_match_size as PMPI_Type_match_size
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype) __attribute__((weak,alias("PMPI_Type_match_size")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -56,7 +58,9 @@ int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype)
 {
     static const char FCNAME[] = "MPI_Type_match_size";
     int mpi_errno = MPI_SUCCESS;
+#ifdef HAVE_ERROR_CHECKING
     static const char *tname = 0;
+#endif
     /* Note that all of the datatype have values, even if the type is 
        not available. We test for that case separately.  We also 
        prefer the Fortran types to the C type, if they are available */
@@ -77,18 +81,16 @@ int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype)
 	MPI_C_COMPLEX, MPI_C_DOUBLE_COMPLEX, MPI_C_LONG_DOUBLE_COMPLEX,
     };
     MPI_Datatype matched_datatype = MPI_DATATYPE_NULL;
-    int i, tsize;
-    MPIU_THREADPRIV_DECL;
+    int i;
+    MPI_Aint tsize;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_MATCH_SIZE);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
 
-    /* FIXME: This routine does not require the allfunc critical section */
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    /* FIXME: This routine does not require the global critical section */
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_MATCH_SIZE);
 
-    MPIU_THREADPRIV_GET;
-    
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
@@ -115,7 +117,9 @@ int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype)
     case MPI_TYPECLASS_REAL: 
 	{
 	    int nRealTypes = sizeof(real_types) / sizeof(MPI_Datatype);
+#ifdef HAVE_ERROR_CHECKING
 	    tname = "MPI_TYPECLASS_REAL";
+#endif
 	    for (i=0; i<nRealTypes; i++) {
 		if (real_types[i] == MPI_DATATYPE_NULL) { continue; }
 		MPIR_Type_size_impl( real_types[i], &tsize );
@@ -129,7 +133,9 @@ int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype)
     case MPI_TYPECLASS_INTEGER:
 	{
 	    int nIntTypes = sizeof(int_types) / sizeof(MPI_Datatype);
+#ifdef HAVE_ERROR_CHECKING
 	    tname = "MPI_TYPECLASS_INTEGER";
+#endif
 	    for (i=0; i<nIntTypes; i++) {
 		if (int_types[i] == MPI_DATATYPE_NULL) { continue; }
 		MPIR_Type_size_impl( int_types[i], &tsize );
@@ -143,7 +149,9 @@ int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype)
     case MPI_TYPECLASS_COMPLEX:
 	{
 	    int nComplexTypes = sizeof(complex_types) / sizeof(MPI_Datatype);
+#ifdef HAVE_ERROR_CHECKING
 	    tname = "MPI_TYPECLASS_COMPLEX";
+#endif
 	    for (i=0; i<nComplexTypes; i++) {
 		if (complex_types[i] == MPI_DATATYPE_NULL) { continue; }
 		MPIR_Type_size_impl( complex_types[i], &tsize );
@@ -156,14 +164,14 @@ int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype)
 	break;
     default:
 	/* --BEGIN ERROR HANDLING-- */
-	MPIU_ERR_SETANDSTMT(mpi_errno, MPI_ERR_ARG, break, "**typematchnoclass");
+	MPIR_ERR_SETANDSTMT(mpi_errno, MPI_ERR_ARG, break, "**typematchnoclass");
 	/* --END ERROR HANDLING-- */
     }
 
     if (mpi_errno == MPI_SUCCESS) {
 	if (matched_datatype == MPI_DATATYPE_NULL) {
 	    /* --BEGIN ERROR HANDLING-- */
-	    MPIU_ERR_SETANDSTMT2(mpi_errno, MPI_ERR_ARG,;, "**typematchsize", "**typematchsize %s %d", tname, size);
+	    MPIR_ERR_SETANDSTMT2(mpi_errno, MPI_ERR_ARG,;, "**typematchsize", "**typematchsize %s %d", tname, size);
 	    /* --END ERROR HANDLING-- */
 	}
 	else {
@@ -176,7 +184,7 @@ int MPI_Type_match_size(int typeclass, int size, MPI_Datatype *datatype)
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_MATCH_SIZE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

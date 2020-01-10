@@ -1,0 +1,228 @@
+From 7a9b12d8c8d2fdb2906f941fab9853e39883d381 Mon Sep 17 00:00:00 2001
+From: Michal Schmidt <mschmidt@redhat.com>
+Date: Tue, 21 Jun 2016 17:26:49 +0200
+Subject: [PATCH 2/4] Revert "require libtool >= 2.4.3"
+
+This reverts commit b21dc461115bdf99d42176ecea8e8efc763d8a2d.
+---
+ autogen.sh                                        |  31 +++++-
+ maint/0001-libtool-powerpc-le-linux-support.patch | 111 ++++++++++++++++++++++
+ maint/darwin-ifort.patch                          |   8 +-
+ maint/libtool.m4.patch                            |  11 +++
+ 4 files changed, 155 insertions(+), 6 deletions(-)
+ create mode 100644 maint/0001-libtool-powerpc-le-linux-support.patch
+ create mode 100644 maint/libtool.m4.patch
+
+diff --git a/autogen.sh b/autogen.sh
+index bc33139189..8a8ccd90f2 100755
+--- a/autogen.sh
++++ b/autogen.sh
+@@ -544,7 +544,7 @@ fi
+ 
+ echo_n "Checking for libtool version... "
+ recreate_tmp
+-ver=2.4.3
++ver=2.4
+ cat <<EOF >.tmp/configure.ac
+ AC_INIT(testver,1.0)
+ AC_CONFIG_AUX_DIR([m4])
+@@ -924,6 +924,33 @@ if [ "$do_build_configure" = "yes" ] ; then
+             # Older versions are not supported to build mpich.
+             # Newer versions should have this patch already included.
+             if [ -f $amdir/confdb/libtool.m4 ] ; then
++                echo_n "Patching libtool.m4 to enable support for powerpcle... "
++                powerpcle_patch_requires_rebuild=no
++                patch -N -s -l $amdir/confdb/libtool.m4 maint/0001-libtool-powerpc-le-linux-support.patch
++                if [ $? -eq 0 ] ; then
++                    powerpcle_patch_requires_rebuild=yes
++                    # Remove possible leftovers, which don't imply a failure
++                    rm -f $amdir/confdb/libtool.m4.orig
++                    echo "done"
++                else
++                    echo "failed"
++                fi
++
++                # There is no need to patch if we're not going to use Fortran.
++                nagfor_patch_requires_rebuild=no
++                if [ $do_bindings = "yes" ] ; then
++                    echo_n "Patching libtool.m4 for compatibility with nagfor shared libraries... "
++                    patch -N -s -l $amdir/confdb/libtool.m4 maint/libtool.m4.patch
++                    if [ $? -eq 0 ] ; then
++                        nagfor_patch_requires_rebuild=yes
++                        # Remove possible leftovers, which don't imply a failure
++                        rm -f $amdir/confdb/libtool.m4.orig
++                        echo "done"
++                    else
++                        echo "failed"
++                    fi
++                fi
++
+                 # There is no need to patch if we're not going to use Fortran.
+                 ifort_patch_requires_rebuild=no
+                 if [ $do_bindings = "yes" ] ; then
+@@ -939,7 +966,7 @@ if [ "$do_build_configure" = "yes" ] ; then
+                     fi
+                 fi
+ 
+-                if [ $ifort_patch_requires_rebuild = "yes" ] ; then
++                if [ $powerpcle_patch_requires_rebuild = "yes" -o $nagfor_patch_requires_rebuild = "yes" -o $ifort_patch_requires_rebuild = "yes" ] ; then
+                     # Rebuild configure
+                     (cd $amdir && $autoconf -f) || exit 1
+                     # Reset libtool.m4 timestamps to avoid confusing make
+diff --git a/maint/0001-libtool-powerpc-le-linux-support.patch b/maint/0001-libtool-powerpc-le-linux-support.patch
+new file mode 100644
+index 0000000000..52e122ac27
+--- /dev/null
++++ b/maint/0001-libtool-powerpc-le-linux-support.patch
+@@ -0,0 +1,111 @@
++From 723f678b8f297544b64880c8d80b60328e82cb45 Mon Sep 17 00:00:00 2001
++From: Alan Modra <amodra@bigpond.net.au>
++Date: Thu, 6 Jun 2013 14:48:22 +0930
++Subject: [PATCH] libtool: powerpc*le-linux support
++
++This is a combination of 5 commits.
++
++See libtool version 2.4.2.418
++http://git.savannah.gnu.org/cgit/libtool.git/log/?h=v2.4.2.418
++
++==========================================================================
++
++  commit 12bf693d2d317c3313ee91058b2289d65a57f386
++  Author: Alan Modra <amodra@bigpond.net.au>
++  Date:   Thu Jun 6 14:48:22 2013 +0930
++
++      libtool: fix refixed unmangled powerpc*le-linux support patch
++
++      * m4/libtool.m4: fix refixed badly unmangled hunks from earlier
++      powerpc*le changeset.
++      Reported by Peter Rosin.
++
++      Signed-off-by: Gary V. Vaughan <gary@gnu.org>
++
++  commit aa14ead14c5e375789f08026d9ece5963a9322c2
++  Author: Alan Modra <amodra@bigpond.net.au>
++  Date:   Thu Jun 6 14:48:22 2013 +0930
++
++      libtool: refix unmangled powerpc*le-linux support patch
++
++      * m4/libtool.m4: refix badly unmangled hunks from earlier
++      powerpc*le changeset.
++      Reported by Peter Rosin.
++
++      Signed-off-by: Gary V. Vaughan <gary@gnu.org>
++
++  commit bb1c8bca8aee6e487aaf6b320b8f56f6ac0d21ac
++  Author: Gary V. Vaughan <gary@gnu.org>
++  Date:   Thu Aug 22 15:38:00 2013 +0700
++
++      libtool: refactor powerpc*le-linux case branch expressions.
++
++      libtool (_LT_ENABLE_LOCK): make inner case branch expressions
++      consistent with outer case expression.
++      Reported by Peter Rosin.
++
++      Signed-off-by: Gary V. Vaughan <gary@gnu.org>
++
++  commit 03754a10041e86b2bd41b404a9ad824ef28bee7e
++  Author: Alan Modra <amodra@bigpond.net.au>
++  Date:   Thu Jun 6 14:48:22 2013 +0930
++
++      libtool: fix mangled powerpc*le-linux support patch
++
++      * m4/libtool.m4: unmangled badly pasted hunks from previous
++      changeset.
++
++  commit f21c4d470423ab5b108918eaa5db295f644b12d1
++  Author: Alan Modra <amodra@bigpond.net.au>
++  Date:   Thu Jun 6 14:48:22 2013 +0930
++
++      libtool: initial powerpc*le-linux support
++
++      * m4/libtool.m4 (ld -m flags): Remove non-canonical ppc host match.
++      Support little-endian powerpc linux host.
++
++==========================================================================
++---
++ libltdl/m4/libtool.m4 |   12 +++++++++---
++ 1 files changed, 9 insertions(+), 3 deletions(-)
++
++diff --git a/libltdl/m4/libtool.m4 b/libltdl/m4/libtool.m4
++index d812584..7aefebc 100644
++--- a/libltdl/m4/libtool.m4
+++++ b/libltdl/m4/libtool.m4
++@@ -1268,7 +1268,7 @@ ia64-*-hpux*)
++   rm -rf conftest*
++   ;;
++ 
++-x86_64-*kfreebsd*-gnu|x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*| \
+++x86_64-*kfreebsd*-gnu|x86_64-*linux*|powerpc*-*linux*| \
++ s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
++   # Find out which ABI we are using.
++   echo 'int i;' > conftest.$ac_ext
++@@ -1282,7 +1282,10 @@ s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
++ 	  x86_64-*linux*)
++ 	    LD="${LD-ld} -m elf_i386"
++ 	    ;;
++-	  ppc64-*linux*|powerpc64-*linux*)
+++	  powerpc64le-*linux*)
+++	    LD="${LD-ld} -m elf32lppclinux"
+++	    ;;
+++	  powerpc64-*linux*)
++ 	    LD="${LD-ld} -m elf32ppclinux"
++ 	    ;;
++ 	  s390x-*linux*)
++@@ -1301,7 +1304,10 @@ s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
++ 	  x86_64-*linux*)
++ 	    LD="${LD-ld} -m elf_x86_64"
++ 	    ;;
++-	  ppc*-*linux*|powerpc*-*linux*)
+++	  powerpcle-*linux*)
+++	    LD="${LD-ld} -m elf64lppc"
+++	    ;;
+++	  powerpc-*linux*)
++ 	    LD="${LD-ld} -m elf64ppc"
++ 	    ;;
++ 	  s390*-*linux*|s390*-*tpf*)
++-- 
++1.7.1
++
+diff --git a/maint/darwin-ifort.patch b/maint/darwin-ifort.patch
+index 7ce8b39211..42c7816200 100644
+--- a/maint/darwin-ifort.patch
++++ b/maint/darwin-ifort.patch
+@@ -1,11 +1,11 @@
+ --- confdb/libtool.m4~ 2014-12-23 10:59:38.000000000 -0600
+ +++ confdb/libtool.m4  2014-12-23 11:05:54.000000000 -0600
+-@@ -1088,7 +1088,10 @@ m4_defun([_LT_DARWIN_LINKER_FEATURES],
++@@ -1097,7 +1097,10 @@
+    _LT_TAGVAR(link_all_deplibs, $1)=yes
+-   _LT_TAGVAR(allow_undefined_flag, $1)=$_lt_dar_allow_undefined
++   _LT_TAGVAR(allow_undefined_flag, $1)="$_lt_dar_allow_undefined"
+    case $cc_basename in
+--     ifort*|nagfor*) _lt_dar_can_shared=yes ;;
+-+     ifort*|nagfor*)
++-     ifort*) _lt_dar_can_shared=yes ;;
+++     ifort*)
+ +        _LT_TAGVAR(lt_prog_compiler_wl, $1)='-Wl,'
+ +        _lt_dar_can_shared=yes
+ +      ;;
+diff --git a/maint/libtool.m4.patch b/maint/libtool.m4.patch
+new file mode 100644
+index 0000000000..4ad76286cb
+--- /dev/null
++++ b/maint/libtool.m4.patch
+@@ -0,0 +1,11 @@
++--- confdb/libtool.m4 2013-03-29 16:26:23.162062517 -0500
+++++ confdb/libtool.m4  2013-06-21 14:22:05.138914413 -0500
++@@ -4817,6 +4817,8 @@
++	lf95*)				# Lahey Fortran 8.1
++	  _LT_TAGVAR(whole_archive_flag_spec, $1)=
++	  tmp_sharedflag='--shared' ;;
+++	nagfor*)			# NAGFOR 5.3
+++	  tmp_sharedflag='-Wl,-shared' ;;
++	xl[[cC]]* | bgxl[[cC]]* | mpixl[[cC]]*) # IBM XL C 8.0 on PPC (deal with xlf below)
++	  tmp_sharedflag='-qmkshrobj'
++	  tmp_addflag= ;;
+-- 
+2.7.4
+

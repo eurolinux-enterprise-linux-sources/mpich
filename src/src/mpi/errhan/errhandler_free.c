@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Errhandler_free  MPI_Errhandler_free
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Errhandler_free as PMPI_Errhandler_free
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Errhandler_free(MPI_Errhandler *errhandler) __attribute__((weak,alias("PMPI_Errhandler_free")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -55,7 +57,7 @@ int MPI_Errhandler_free(MPI_Errhandler *errhandler)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_ERRHANDLER_FREE);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -99,7 +101,7 @@ int MPI_Errhandler_free(MPI_Errhandler *errhandler)
   fn_exit:
 #endif
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_ERRHANDLER_FREE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
     /* --BEGIN ERROR HANDLING-- */

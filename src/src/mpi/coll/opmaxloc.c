@@ -75,7 +75,7 @@ typedef struct MPIR_longdoubleint_loctype {
 #undef FUNCNAME
 #define FUNCNAME MPIR_MAXLOC
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPIR_MAXLOC( 
 	void *invec, 
 	void *inoutvec, 
@@ -83,9 +83,13 @@ void MPIR_MAXLOC(
 	MPI_Datatype *type )
 {
     int mpi_errno = MPI_SUCCESS;
-    int i, len = *Len, flen;
+    int i, len = *Len;
     
-    flen = len * 2; /* used for Fortran types */
+#ifdef HAVE_FORTRAN_BINDING
+#ifndef HAVE_NO_FORTRAN_MPI_TYPES_IN_C
+    int flen = len * 2; /* used for Fortran types */
+#endif
+#endif
 
     switch (*type) {
     /* first the C types */
@@ -108,10 +112,10 @@ void MPIR_MAXLOC(
 #endif
 	/* --BEGIN ERROR HANDLING-- */
     default: {
-	MPIU_THREADPRIV_DECL;
-	MPIU_THREADPRIV_GET;
-        MPIU_ERR_SET1(mpi_errno, MPI_ERR_OP, "**opundefined","**opundefined %s", "MPI_MAXLOC" );
-        MPIU_THREADPRIV_FIELD(op_errno) = mpi_errno;
+	MPID_THREADPRIV_DECL;
+	MPID_THREADPRIV_GET;
+        MPIR_ERR_SET1(mpi_errno, MPI_ERR_OP, "**opundefined","**opundefined %s", "MPI_MAXLOC" );
+        MPID_THREADPRIV_FIELD(op_errno) = mpi_errno;
         break;
     }
 	/* --END ERROR HANDLING-- */
@@ -123,7 +127,7 @@ void MPIR_MAXLOC(
 #undef FUNCNAME
 #define FUNCNAME MPIR_MAXLOC_check_dtype
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_MAXLOC_check_dtype( MPI_Datatype type )
 {
     int mpi_errno = MPI_SUCCESS;
@@ -148,7 +152,7 @@ int MPIR_MAXLOC_check_dtype( MPI_Datatype type )
 #endif
         break;
 
-    default: MPIU_ERR_SET1(mpi_errno, MPI_ERR_OP, "**opundefined", "**opundefined %s", "MPI_MAXLOC");
+    default: MPIR_ERR_SET1(mpi_errno, MPI_ERR_OP, "**opundefined", "**opundefined %s", "MPI_MAXLOC");
     }
     
     return mpi_errno;

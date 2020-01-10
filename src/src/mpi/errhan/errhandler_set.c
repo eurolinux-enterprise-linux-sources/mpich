@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Errhandler_set  MPI_Errhandler_set
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Errhandler_set as PMPI_Errhandler_set
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Errhandler_set(MPI_Comm comm, MPI_Errhandler errhandler) __attribute__((weak,alias("PMPI_Errhandler_set")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -28,7 +30,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPI_Errhandler_set
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
   MPI_Errhandler_set - Sets the error handler for a communicator
 
@@ -59,7 +61,7 @@ int MPI_Errhandler_set(MPI_Comm comm, MPI_Errhandler errhandler)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_ERRHANDLER_SET);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -83,7 +85,7 @@ int MPI_Errhandler_set(MPI_Comm comm, MPI_Errhandler errhandler)
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr; if comm_ptr is not value, it will be reset to null */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
             if (mpi_errno) goto fn_fail;
 	    MPIR_ERRTEST_ERRHANDLER(errhandler, mpi_errno);
 
@@ -106,7 +108,7 @@ int MPI_Errhandler_set(MPI_Comm comm, MPI_Errhandler errhandler)
   fn_exit:
 #   endif
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_ERRHANDLER_SET);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
 #   ifdef HAVE_ERROR_CHECKING

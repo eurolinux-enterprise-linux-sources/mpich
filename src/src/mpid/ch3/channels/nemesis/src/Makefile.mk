@@ -5,7 +5,7 @@
 ##     See COPYRIGHT in top-level directory.
 ##
 
-lib_lib@MPILIBNAME@_la_SOURCES +=				\
+mpi_core_sources +=				\
     src/mpid/ch3/channels/nemesis/src/ch3_finalize.c		\
     src/mpid/ch3/channels/nemesis/src/ch3_init.c		\
     src/mpid/ch3/channels/nemesis/src/ch3_isend.c		\
@@ -13,7 +13,6 @@ lib_lib@MPILIBNAME@_la_SOURCES +=				\
     src/mpid/ch3/channels/nemesis/src/ch3_istartmsg.c		\
     src/mpid/ch3/channels/nemesis/src/ch3_istartmsgv.c		\
     src/mpid/ch3/channels/nemesis/src/ch3_progress.c		\
-    src/mpid/ch3/channels/nemesis/src/ch3_abort.c		\
     src/mpid/ch3/channels/nemesis/src/ch3_rma_shm.c             \
     src/mpid/ch3/channels/nemesis/src/ch3_win_fns.c             \
     src/mpid/ch3/channels/nemesis/src/ch3i_comm.c		\

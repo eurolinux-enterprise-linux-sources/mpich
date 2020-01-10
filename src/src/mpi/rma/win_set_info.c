@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
 /*
  *
- *  (C) 2012 by Argonne National Laboratory.
+ *  (C) 2008 by Argonne National Laboratory.
  *      See COPYRIGHT in top-level directory.
  */
 
@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Win_set_info  MPI_Win_set_info
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Win_set_info as PMPI_Win_set_info
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Win_set_info(MPI_Win win, MPI_Info info) __attribute__((weak,alias("PMPI_Win_set_info")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -71,7 +73,7 @@ int MPI_Win_set_info(MPI_Win win, MPI_Info info)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_RMA_FUNC_ENTER(MPID_STATE_MPI_WIN_SET_INFO);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -115,7 +117,7 @@ int MPI_Win_set_info(MPI_Win win, MPI_Info info)
 
   fn_exit:
     MPID_MPI_RMA_FUNC_EXIT(MPID_STATE_MPI_WIN_SET_INFO);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

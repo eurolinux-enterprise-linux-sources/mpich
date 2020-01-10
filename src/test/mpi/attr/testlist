@@ -7,6 +7,7 @@ attrend2 1
 attrend2 5
 attrerrcomm 1
 attrerrtype 1
+attrdeleteget 1
 attr2type 1
 attrorder 1
 attrordercomm 1
@@ -17,3 +18,6 @@ fkeyval 1
 fkeyvalcomm 1
 fkeyvaltype 1
 keyval_double_free 1
+keyval_double_free_comm 1
+keyval_double_free_type 1
+keyval_double_free_win 1

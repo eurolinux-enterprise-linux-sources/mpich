@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Group_range_incl  MPI_Group_range_incl
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Group_range_incl as PMPI_Group_range_incl
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3], MPI_Group *newgroup) __attribute__((weak,alias("PMPI_Group_range_incl")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Group_range_incl_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Group_range_incl_impl(MPID_Group *group_ptr, int n, int ranges[][3], MPID_Group **new_group_ptr)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -63,7 +65,6 @@ int MPIR_Group_range_incl_impl(MPID_Group *group_ptr, int n, int ranges[][3], MP
         first = ranges[i][0]; last = ranges[i][1]; stride = ranges[i][2];
         if (stride > 0) {
             for (j=first; j<=last; j += stride) {
-                (*new_group_ptr)->lrank_to_lpid[k].lrank = k;
                 (*new_group_ptr)->lrank_to_lpid[k].lpid = 
                     group_ptr->lrank_to_lpid[j].lpid;
                 if (j == group_ptr->rank) 
@@ -73,7 +74,6 @@ int MPIR_Group_range_incl_impl(MPID_Group *group_ptr, int n, int ranges[][3], MP
         }
         else {
             for (j=first; j>=last; j += stride) {
-                (*new_group_ptr)->lrank_to_lpid[k].lrank = k;
                 (*new_group_ptr)->lrank_to_lpid[k].lpid = 
                     group_ptr->lrank_to_lpid[j].lpid;
                 if (j == group_ptr->rank) 
@@ -98,7 +98,7 @@ int MPIR_Group_range_incl_impl(MPID_Group *group_ptr, int n, int ranges[][3], MP
 #undef FUNCNAME
 #define FUNCNAME MPI_Group_range_incl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 
 /*@
 
@@ -138,7 +138,7 @@ int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3],
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_GROUP_RANGE_INCL);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -178,13 +178,13 @@ int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3],
     mpi_errno = MPIR_Group_range_incl_impl(group_ptr, n, ranges, &new_group_ptr);
     if (mpi_errno) goto fn_fail;
 
-    MPIU_OBJ_PUBLISH_HANDLE(*newgroup, new_group_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*newgroup, new_group_ptr->handle);
 
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_GROUP_RANGE_INCL);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

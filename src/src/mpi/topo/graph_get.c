@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Graph_get  MPI_Graph_get
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Graph_get as PMPI_Graph_get
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Graph_get(MPI_Comm comm, int maxindex, int maxedges, int indx[], int edges[]) __attribute__((weak,alias("PMPI_Graph_get")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -87,7 +89,7 @@ int MPI_Graph_get(MPI_Comm comm, int maxindex, int maxedges,
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
             if (mpi_errno) goto fn_fail;
 	    /* If comm_ptr is not valid, it will be reset to null */
 	    
@@ -102,11 +104,11 @@ int MPI_Graph_get(MPI_Comm comm, int maxindex, int maxedges,
     
     topo_ptr = MPIR_Topology_get( comm_ptr );
 
-    MPIU_ERR_CHKANDJUMP((!topo_ptr || topo_ptr->kind != MPI_GRAPH), mpi_errno, MPI_ERR_TOPOLOGY, "**notgraphtopo");
-    MPIU_ERR_CHKANDJUMP3((topo_ptr->topo.graph.nnodes > maxindex), mpi_errno, MPI_ERR_ARG, "**argrange",
-			 "**argrange %s %d %d", "maxindex", maxindex, topo_ptr->topo.graph.nnodes);
-    MPIU_ERR_CHKANDJUMP3((topo_ptr->topo.graph.nedges > maxedges), mpi_errno, MPI_ERR_ARG, "**argrange",
-			 "**argrange %s %d %d", "maxedges", maxedges, topo_ptr->topo.graph.nedges);
+    MPIR_ERR_CHKANDJUMP((!topo_ptr || topo_ptr->kind != MPI_GRAPH), mpi_errno, MPI_ERR_TOPOLOGY, "**notgraphtopo");
+    MPIR_ERR_CHKANDJUMP3((topo_ptr->topo.graph.nnodes > maxindex), mpi_errno, MPI_ERR_ARG, "**argtoosmall",
+			 "**argtoosmall %s %d %d", "maxindex", maxindex, topo_ptr->topo.graph.nnodes);
+    MPIR_ERR_CHKANDJUMP3((topo_ptr->topo.graph.nedges > maxedges), mpi_errno, MPI_ERR_ARG, "**argtoosmall",
+			 "**argtoosmall %s %d %d", "maxedges", maxedges, topo_ptr->topo.graph.nedges);
     
     /* Get index */
     n = topo_ptr->topo.graph.nnodes;

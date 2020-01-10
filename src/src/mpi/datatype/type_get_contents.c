@@ -14,6 +14,10 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_get_contents  MPI_Type_get_contents
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_get_contents as PMPI_Type_get_contents
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_get_contents(MPI_Datatype datatype, int max_integers, int max_addresses,
+                          int max_datatypes, int array_of_integers[],
+                          MPI_Aint array_of_addresses[], MPI_Datatype array_of_datatypes[]) __attribute__((weak,alias("PMPI_Type_get_contents")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -59,12 +63,11 @@ int MPI_Type_get_contents(MPI_Datatype datatype,
 {
     static const char FCNAME[] = "MPI_Type_get_contents";
     int mpi_errno = MPI_SUCCESS;
-    MPID_Datatype *datatype_ptr = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_TYPE_GET_CONTENTS);
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_GET_CONTENTS);
     
     /* Validate parameters, especially handles needing to be converted */
@@ -78,14 +81,13 @@ int MPI_Type_get_contents(MPI_Datatype datatype,
     }
 #   endif
     
-    /* Convert MPI object handles to object pointers */
-    MPID_Datatype_get_ptr(datatype, datatype_ptr);
-
     /* Validate parameters and objects (post conversion) */
 #   ifdef HAVE_ERROR_CHECKING
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
+            MPID_Datatype *datatype_ptr = NULL;
+
 	    /* Check for built-in type */
 	    if (HANDLE_GET_KIND(datatype) == HANDLE_KIND_BUILTIN) {
 		mpi_errno = MPIR_Err_create_code(MPI_SUCCESS,
@@ -113,6 +115,9 @@ int MPI_Type_get_contents(MPI_Datatype datatype,
 		goto fn_fail;
 	    }
 
+            /* Convert MPI object handles to object pointers */
+            MPID_Datatype_get_ptr(datatype, datatype_ptr);
+
             /* Validate datatype_ptr */
             MPID_Datatype_valid_ptr(datatype_ptr, mpi_errno);
 	    /* If comm_ptr is not value, it will be reset to null */
@@ -137,7 +142,7 @@ int MPI_Type_get_contents(MPI_Datatype datatype,
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_GET_CONTENTS);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

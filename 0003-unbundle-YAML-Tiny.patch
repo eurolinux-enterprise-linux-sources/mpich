@@ -1,0 +1,48 @@
+From e052dd9f07bdcf9c5ec738d64ee019b8a0b8b183 Mon Sep 17 00:00:00 2001
+From: Michal Schmidt <mschmidt@redhat.com>
+Date: Thu, 19 May 2016 18:16:05 +0200
+Subject: [PATCH 3/4] unbundle YAML::Tiny
+
+Newer YAML::Tiny is stricter, so fix YAML syntax error in bcast.c.
+---
+ maint/Makefile.mk    | 3 ---
+ src/mpi/coll/bcast.c | 2 +-
+ 2 files changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/maint/Makefile.mk b/maint/Makefile.mk
+index 83a9572daf..751025969c 100644
+--- a/maint/Makefile.mk
++++ b/maint/Makefile.mk
+@@ -28,7 +28,6 @@ dist_noinst_SCRIPTS +=                \
+     maint/extractcvars                   \
+     maint/genstates.in                \
+     maint/getcoverage.in              \
+-    maint/local_perl/lib/YAML/Tiny.pm \
+     maint/parse.sub                   \
+     maint/parsetest                   \
+     maint/release.pl                  \
+@@ -43,8 +42,6 @@ dist_noinst_DATA +=                        \
+     maint/errmsgdirs                       \
+     maint/cvardirs                         \
+     maint/gccimpgen.cpp                    \
+-    maint/local_perl/README                \
+-    maint/local_perl/YAML-Tiny-1.41.tar.gz \
+     maint/mpi1.lst                         \
+     maint/setup.jpg                        \
+     maint/structalign.c                    \
+diff --git a/src/mpi/coll/bcast.c b/src/mpi/coll/bcast.c
+index 64536a3494..8e55eb5268 100644
+--- a/src/mpi/coll/bcast.c
++++ b/src/mpi/coll/bcast.c
+@@ -79,7 +79,7 @@ cvars:
+       class       : device
+       verbosity   : MPI_T_VERBOSITY_USER_BASIC
+       scope       : MPI_T_SCOPE_ALL_EQ
+-      description : Enable SMP aware broadcast (See also: MPIR_CVAR_MAX_SMP_BCAST_MSG_SIZE)
++      description : "Enable SMP aware broadcast (See also: MPIR_CVAR_MAX_SMP_BCAST_MSG_SIZE)"
+ 
+     - name        : MPIR_CVAR_MAX_SMP_BCAST_MSG_SIZE
+       category    : COLLECTIVE
+-- 
+2.7.4
+

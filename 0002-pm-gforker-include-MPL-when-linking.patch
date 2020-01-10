@@ -1,0 +1,13 @@
+diff --git mpich-3.2/src/pm/gforker/Makefile.mk~ mpich-3.2/src/pm/gforker/Makefile.mk
+index 3a156057b9..afb7b41a01 100644
+--- mpich-3.2/src/pm/gforker/Makefile.mk~
++++ mpich-3.2/src/pm/gforker/Makefile.mk
+@@ -22,7 +22,7 @@ src_pm_gforker_mpiexec_CPPFLAGS = $(common_pm_includes) $(AM_CPPFLAGS)
+ else !PRIMARY_PM_GFORKER
+ bin_PROGRAMS += src/pm/gforker/mpiexec.gforker
+ src_pm_gforker_mpiexec_gforker_SOURCES = src/pm/gforker/mpiexec.c 
+-src_pm_gforker_mpiexec_gforker_LDADD = src/pm/util/libmpiexec.a
++src_pm_gforker_mpiexec_gforker_LDADD = src/pm/util/libmpiexec.a $(mpllib)
+ # we may not want to add AM_CPPFLAGS for this program
+ src_pm_gforker_mpiexec_gforker_CPPFLAGS = $(common_pm_includes) $(AM_CPPFLAGS)
+ endif !PRIMARY_PM_GFORKER

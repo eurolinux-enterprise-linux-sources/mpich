@@ -20,6 +20,8 @@
 #pragma _HP_SECONDARY_DEF PMPIX_Mutex_unlock  MPIX_Mutex_unlock
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPIX_Mutex_unlock as PMPIX_Mutex_unlock
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPIX_Mutex_unlock(MPIX_Mutex hdl, int mutex, int proc) __attribute__((weak,alias("PMPIX_Mutex_unlock")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -33,7 +35,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIX_Mutex_unlock
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 
 /** Unlock a mutex.
   *

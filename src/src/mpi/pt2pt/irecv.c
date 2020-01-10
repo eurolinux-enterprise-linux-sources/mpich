@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Irecv  MPI_Irecv
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Irecv as PMPI_Irecv
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+              MPI_Comm comm, MPI_Request *request) __attribute__((weak,alias("PMPI_Irecv")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -66,7 +69,7 @@ int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER_BACK(MPID_STATE_MPI_IRECV);
 
     /* Validate handle parameters needing to be converted */
@@ -88,7 +91,7 @@ int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source,
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 	    
 	    MPIR_ERRTEST_COUNT(count, mpi_errno);
@@ -122,19 +125,24 @@ int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source,
     
     mpi_errno = MPID_Irecv(buf, count, datatype, source, tag, comm_ptr, 
 			   MPID_CONTEXT_INTRA_PT2PT, &request_ptr);
-    if (mpi_errno != MPI_SUCCESS) goto fn_fail;
-
     /* return the handle of the request to the user */
     /* MPIU_OBJ_HANDLE_PUBLISH is unnecessary for irecv, lower-level access is
      * responsible for its own consistency, while upper-level field access is
      * controlled by the completion counter */
     *request = request_ptr->handle;
 
+    /* Put this part after setting the request so that if the request is
+     * pending (which is still considered an error), it will still be set
+     * correctly here. For real error cases, the user might get garbage as
+     * their request value, but that's fine since the definition is
+     * undefined anyway. */
+    if (mpi_errno != MPI_SUCCESS) goto fn_fail;
+
     /* ... end of body of routine ... */
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT_BACK(MPID_STATE_MPI_IRECV);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

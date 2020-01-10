@@ -24,27 +24,33 @@
 
 #define MPID_Datatype_add_ref(datatype_ptr) MPIU_Object_add_ref((datatype_ptr))
 
-#define MPID_Datatype_get_basic_type(a,eltype_) do {                    \
+#define MPID_Datatype_get_basic_type(a,basic_type_) do {                    \
     void *ptr;								\
     switch (HANDLE_GET_KIND(a)) {					\
         case HANDLE_KIND_DIRECT:					\
             ptr = MPID_Datatype_direct+HANDLE_INDEX(a);			\
-            eltype_ = ((MPID_Datatype *) ptr)->eltype;			\
+            basic_type_ = ((MPID_Datatype *) ptr)->basic_type;			\
             break;							\
         case HANDLE_KIND_INDIRECT:					\
             ptr = ((MPID_Datatype *)					\
 		   MPIU_Handle_get_ptr_indirect(a,&MPID_Datatype_mem));	\
-            eltype_ = ((MPID_Datatype *) ptr)->eltype;			\
+            basic_type_ = ((MPID_Datatype *) ptr)->basic_type;			\
             break;							\
         case HANDLE_KIND_BUILTIN:					\
-            eltype_ = a;						\
+            basic_type_ = a;						\
             break;							\
         case HANDLE_KIND_INVALID:					\
         default:							\
-	    eltype_ = 0;						\
+	    basic_type_ = 0;						\
 	    break;							\
  									\
     }									\
+    /* This macro returns the builtin type, if 'basic_type' is not      \
+     * a builtin type, it must be a pair type composed of different     \
+     * builtin types, so we return MPI_DATATYPE_NULL here.              \
+     */                                                                 \
+    if (HANDLE_GET_KIND(basic_type_) != HANDLE_KIND_BUILTIN)                \
+        basic_type_ = MPI_DATATYPE_NULL;                                    \
  } while(0)
 
 /* MPID_Datatype_release decrements the reference count on the MPID_Datatype
@@ -52,10 +58,10 @@
  * structures.
  */
 #define MPID_Datatype_release(datatype_ptr) do {                            \
-    int inuse;								    \
+    int inuse_;								    \
 									    \
-    MPIU_Object_release_ref((datatype_ptr),&inuse);			    \
-    if (!inuse) {							    \
+    MPIU_Object_release_ref((datatype_ptr),&inuse_);			    \
+    if (!inuse_) {							    \
         int lmpi_errno = MPI_SUCCESS;					    \
 	if (MPIR_Process.attr_free && datatype_ptr->attributes) {	    \
 	    lmpi_errno = MPIR_Process.attr_free( datatype_ptr->handle,	    \
@@ -358,21 +364,28 @@ typedef struct MPID_Datatype {
     MPIU_OBJECT_HEADER; /* adds handle and ref_count fields */
 
     /* basic parameters for datatype, accessible via MPI calls */
-    int      size;
+    MPI_Aint size;   /* MPI_Count could be 128 bits, so use MPI_Aint */
     MPI_Aint extent, ub, lb, true_ub, true_lb;
 
     /* chars affecting subsequent datatype processing and creation */
-    int alignsize, has_sticky_ub, has_sticky_lb;
+    MPI_Aint alignsize;
+    int has_sticky_ub, has_sticky_lb;
     int is_permanent; /* non-zero if datatype is a predefined type */
     int is_committed;
 
     /* element information; used for accumulate and get elements
-     *
-     * if type is composed of more than one element type, then
-     * eltype == MPI_DATATYPE_NULL and element_size == -1
+     * basic_type: describes basic type (predefined type). If the
+     *             type is composed of the same basic type, it is
+     *             set to that type, otherwise it is set to MPI_DATATYPE_NULL.
+     * n_builtin_elements: refers to the number of builtin type elements.
+     * builtin_element_size: refers to the size of builtin type. If the
+     *                       type is composed of the same builtin type,
+     *                       it is set to size of that type, otherwise it
+     *                       is set to -1.
      */
-    int      eltype, n_elements;
-    MPI_Aint element_size;
+    int      basic_type;
+    MPI_Aint n_builtin_elements;
+    MPI_Aint builtin_element_size;
 
     /* information on contiguity of type, for processing shortcuts.
      *
@@ -384,7 +397,7 @@ typedef struct MPID_Datatype {
      * It is not trivial to calculate the *real* number of contig 
      * blocks in the case where old datatype is non-contiguous
      */
-    int max_contig_blocks;
+    MPI_Aint max_contig_blocks;
 
     /* pointer to contents and envelope data for the datatype */
     MPID_Datatype_contents *contents;
@@ -393,11 +406,11 @@ typedef struct MPID_Datatype {
      * and a depth used to verify that we can process it (limited stack depth
      */
     struct MPID_Dataloop *dataloop; /* might be optimized for homogenous */
-    int                   dataloop_size;
+    MPI_Aint              dataloop_size;
     int                   dataloop_depth;
 #if defined(MPID_HAS_HETERO) || 1
     struct MPID_Dataloop *hetero_dloop; /* heterogeneous dataloop */
-    int                   hetero_dloop_size;
+    MPI_Aint              hetero_dloop_size;
     int                   hetero_dloop_depth;
 #endif /* MPID_HAS_HETERO */
     /* MPI-2 attributes and name */
@@ -552,6 +565,20 @@ do {									\
         }                                                                      \
     } while (0)
 
+/* helper macro: takes an MPI_Datatype handle value and returns true_lb in
+ * (*true_lb_) */
+#define MPID_Datatype_get_true_lb(dtype_, true_lb_)                            \
+    do {                                                                       \
+        if (HANDLE_GET_KIND(dtype_) == HANDLE_KIND_BUILTIN) {                  \
+            *(true_lb_) = 0;                                                   \
+        }                                                                      \
+        else {                                                                 \
+            MPID_Datatype *dtp_ = NULL;                                        \
+            MPID_Datatype_get_ptr((dtype_), dtp_);                             \
+            *(true_lb_) = dtp_->true_lb;                                       \
+        }                                                                      \
+    } while (0)
+
 /* Datatype functions */
 int MPID_Type_commit(MPI_Datatype *type);
 
@@ -623,30 +650,30 @@ void MPIDI_Datatype_printf(MPI_Datatype type,
 /* Dataloop functions */
 void MPID_Dataloop_copy(void *dest,
 			void *src,
-			int size);
+			MPI_Aint size);
 
 void MPID_Dataloop_print(struct MPID_Dataloop *dataloop,
 			 int depth);
 
 void MPID_Dataloop_alloc(int kind,
-			 int count,
+			 MPI_Aint count,
 			 DLOOP_Dataloop **new_loop_p,
-			 int *new_loop_sz_p);
+			 MPI_Aint *new_loop_sz_p);
 
 void MPID_Dataloop_alloc_and_copy(int kind,
-				  int count,
+				  MPI_Aint count,
 				  struct DLOOP_Dataloop *old_loop,
-				  int old_loop_sz,
+				  MPI_Aint old_loop_sz,
 				  struct DLOOP_Dataloop **new_loop_p,
-				  int *new_loop_sz_p);
-void MPID_Dataloop_struct_alloc(int count,
-				int old_loop_sz,
+				  MPI_Aint *new_loop_sz_p);
+void MPID_Dataloop_struct_alloc(MPI_Aint count,
+				MPI_Aint old_loop_sz,
 				int basic_ct,
 				DLOOP_Dataloop **old_loop_p,
 				DLOOP_Dataloop **new_loop_p,
-				int *new_loop_sz_p);
+				MPI_Aint *new_loop_sz_p);
 void MPID_Dataloop_dup(DLOOP_Dataloop *old_loop,
-		       int old_loop_sz,
+		       MPI_Aint old_loop_sz,
 		       DLOOP_Dataloop **new_loop_p);
 void MPID_Dataloop_free(struct MPID_Dataloop **dataloop);
 
@@ -667,7 +694,7 @@ void MPID_Segment_flatten(struct DLOOP_Segment *segp,
 			  DLOOP_Offset first,
 			  DLOOP_Offset *lastp,
 			  DLOOP_Offset *offp,
-			  int *sizep,
+			  DLOOP_Size *sizep,
 			  DLOOP_Offset *lengthp);
 
 /* misc */
@@ -693,12 +720,12 @@ void MPID_Datatype_free(struct MPID_Datatype *ptr);
 void MPID_Dataloop_update(struct DLOOP_Dataloop *dataloop,
 			  MPI_Aint ptrdiff);
 
-int MPIR_Type_get_contig_blocks(MPI_Datatype type,
-				int *nr_blocks_p);
+MPI_Count MPIR_Type_get_contig_blocks(MPI_Datatype type,
+				MPI_Count *nr_blocks_p);
 
 int MPIR_Type_flatten(MPI_Datatype type,
 		      MPI_Aint *off_array,
-		      int *size_array,
+		      DLOOP_Size *size_array,
 		      MPI_Aint *array_len_p);
 
 void MPID_Segment_pack_external32(struct DLOOP_Segment *segp,

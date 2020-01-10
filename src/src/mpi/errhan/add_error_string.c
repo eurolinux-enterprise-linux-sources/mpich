@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Add_error_string  MPI_Add_error_string
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Add_error_string as PMPI_Add_error_string
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Add_error_string(int errorcode, const char *string) __attribute__((weak,alias("PMPI_Add_error_string")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -64,7 +66,7 @@ int MPI_Add_error_string(int errorcode, const char *string)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_ADD_ERROR_STRING);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -87,7 +89,7 @@ int MPI_Add_error_string(int errorcode, const char *string)
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_ADD_ERROR_STRING);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

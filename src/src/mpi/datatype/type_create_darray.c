@@ -14,12 +14,13 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_create_darray  MPI_Type_create_darray
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_create_darray as PMPI_Type_create_darray
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_create_darray(int size, int rank, int ndims, const int array_of_gsizes[],
+                           const int array_of_distribs[], const int array_of_dargs[],
+                           const int array_of_psizes[], int order, MPI_Datatype oldtype,
+                           MPI_Datatype *newtype) __attribute__((weak,alias("PMPI_Type_create_darray")));
 #endif
 /* -- End Profiling Symbol Block */
-
-#ifndef MIN
-#define MIN(__a, __b) (((__a) < (__b)) ? (__a) : (__b))
-#endif
 
 PMPI_LOCAL int MPIR_Type_block(const int *array_of_gsizes,
 			       int dim,
@@ -105,7 +106,7 @@ PMPI_LOCAL int MPIR_Type_block(const int *array_of_gsizes,
     }
 
     j = global_size - blksize*rank;
-    mysize = MIN(blksize, j);
+    mysize = MPIR_MIN(blksize, j);
     if (mysize < 0) mysize = 0;
 
     stride = orig_extent;
@@ -196,7 +197,7 @@ PMPI_LOCAL int MPIR_Type_cyclic(const int *array_of_gsizes,
     int mpi_errno,blksize, i, blklens[3], st_index, end_index,
 	local_size, rem, count;
     MPI_Aint stride, disps[3];
-    MPI_Datatype type_tmp, types[3];
+    MPI_Datatype type_tmp, type_indexed, types[3];
 
     if (darg == MPI_DISTRIBUTE_DFLT_DARG) blksize = 1;
     else blksize = darg;
@@ -222,7 +223,7 @@ PMPI_LOCAL int MPIR_Type_cyclic(const int *array_of_gsizes,
     else {
 	local_size = ((end_index - st_index + 1)/(nprocs*blksize))*blksize;
 	rem = (end_index - st_index + 1) % (nprocs*blksize);
-	local_size += MIN(rem, blksize);
+	local_size += MPIR_MIN(rem, blksize);
     }
 
     count = local_size/blksize;
@@ -280,18 +281,30 @@ PMPI_LOCAL int MPIR_Type_cyclic(const int *array_of_gsizes,
     if (((order == MPI_ORDER_FORTRAN) && (dim == 0)) ||
 	((order == MPI_ORDER_C) && (dim == ndims-1)))
     {
-        types[0] = MPI_LB;
         disps[0] = 0;
-        types[1] = *type_new;
         disps[1] = (MPI_Aint) rank * (MPI_Aint) blksize * orig_extent;
-        types[2] = MPI_UB;
         disps[2] = orig_extent * (MPI_Aint)(array_of_gsizes[dim]);
-        blklens[0] = blklens[1] = blklens[2] = 1;
-        mpi_errno = MPID_Type_struct(3,
-				     blklens,
-				     disps,
-				     types,
-				     &type_tmp);
+
+/* Instead of using MPI_LB/MPI_UB, which have been removed from MPI in MPI-3,
+   use MPI_Type_create_resized. Use hindexed_block to set the starting displacement
+   of the datatype (disps[1]) and type_create_resized to set lb to 0 (disps[0])
+   and extent to disps[2], which makes ub = disps[2].
+ */
+        mpi_errno = MPID_Type_blockindexed(1, 1, &disps[1],
+                                           1, /* 1 means disp is in bytes */
+                                           *type_new, &type_indexed);
+
+	/* --BEGIN ERROR HANDLING-- */
+	if (mpi_errno != MPI_SUCCESS)
+	{
+	    mpi_errno = MPIR_Err_create_code(mpi_errno, MPIR_ERR_RECOVERABLE, FCNAME, __LINE__, MPI_ERR_OTHER, "**fail", 0);
+	    return mpi_errno;
+	}
+	/* --END ERROR HANDLING-- */
+
+        mpi_errno = MPID_Type_create_resized(type_indexed, 0, disps[2], &type_tmp);
+
+        MPIR_Type_free_impl(&type_indexed);
         MPIR_Type_free_impl(type_new);
         *type_new = type_tmp;
 
@@ -363,9 +376,9 @@ int MPI_Type_create_darray(int size,
     int mpi_errno = MPI_SUCCESS, i;
     MPI_Datatype new_handle;
 
-    int procs, tmp_rank, tmp_size, blklens[3], *coords;
+    int procs, tmp_rank, tmp_size, *coords;
     MPI_Aint *st_offsets, orig_extent, disps[3];
-    MPI_Datatype type_old, type_new = MPI_DATATYPE_NULL, types[3];
+    MPI_Datatype type_old, type_new = MPI_DATATYPE_NULL, tmp_type;
 
 #   ifdef HAVE_ERROR_CHECKING
     MPI_Aint   size_with_aint;
@@ -379,7 +392,7 @@ int MPI_Type_create_darray(int size,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_CREATE_DARRAY);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -405,7 +418,7 @@ int MPI_Type_create_darray(int size,
 	    /* Check parameters */
 	    MPIR_ERRTEST_ARGNONPOS(size, "size", mpi_errno, MPI_ERR_ARG);
             /* use MPI_ERR_RANK class for PE-MPI compatibility */
-            MPIU_ERR_CHKANDJUMP3((rank < 0 || rank >= size), mpi_errno, MPI_ERR_RANK,
+            MPIR_ERR_CHKANDJUMP3((rank < 0 || rank >= size), mpi_errno, MPI_ERR_RANK,
                                  "**argrange", "**argrange %s %d %d", "rank", rank, (size-1));
 	    MPIR_ERRTEST_ARGNONPOS(ndims, "ndims", mpi_errno, MPI_ERR_DIMS);
 
@@ -475,7 +488,7 @@ int MPI_Type_create_darray(int size,
                 tmp_size *= array_of_psizes[i];
 	    }
 
-            MPIU_ERR_CHKANDJUMP1((tmp_size != size), mpi_errno, MPI_ERR_ARG,
+            MPIR_ERR_CHKANDJUMP1((tmp_size != size), mpi_errno, MPI_ERR_ARG,
                                  "**arg", "**arg %s", "array_of_psizes");
 
 	    /* TODO: GET THIS CHECK IN ALSO */
@@ -665,20 +678,27 @@ int MPI_Type_create_darray(int size,
     for (i=0; i<ndims; i++) disps[2] *= (MPI_Aint)(array_of_gsizes[i]);
 	
     disps[0] = 0;
-    blklens[0] = blklens[1] = blklens[2] = 1;
-    types[0] = MPI_LB;
-    types[1] = type_new;
-    types[2] = MPI_UB;
 
-    mpi_errno = MPID_Type_struct(3,
-				 blklens,
-				 disps,
-				 types,
-				 &new_handle);
+/* Instead of using MPI_LB/MPI_UB, which have been removed from MPI in MPI-3,
+   use MPI_Type_create_resized. Use hindexed_block to set the starting displacement
+   of the datatype (disps[1]) and type_create_resized to set lb to 0 (disps[0])
+   and extent to disps[2], which makes ub = disps[2].
+ */
+    mpi_errno = MPID_Type_blockindexed(1, 1, &disps[1],
+                                       1, /* 1 means disp is in bytes */
+                                       type_new, &tmp_type);
+
     /* --BEGIN ERROR HANDLING-- */
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
     /* --END ERROR HANDLING-- */
 
+    mpi_errno = MPID_Type_create_resized(tmp_type, 0, disps[2], &new_handle);
+
+    /* --BEGIN ERROR HANDLING-- */
+    if (mpi_errno != MPI_SUCCESS) goto fn_fail;
+    /* --END ERROR HANDLING-- */
+
+    MPIR_Type_free_impl(&tmp_type);
     MPIR_Type_free_impl(&type_new);
 
     /* at this point we have the new type, and we've cleaned up any
@@ -719,13 +739,13 @@ int MPI_Type_create_darray(int size,
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
     /* --END ERROR HANDLING-- */
 
-    MPIU_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
+    MPID_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
     /* ... end of body of routine ... */
 
   fn_exit:
     MPIU_CHKLMEM_FREEALL();
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_CREATE_DARRAY);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_create_indexed_block  MPI_Type_create_indexed_block
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_create_indexed_block as PMPI_Type_create_indexed_block
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_create_indexed_block(int count, int blocklength, const int array_of_displacements[],
+                                  MPI_Datatype oldtype, MPI_Datatype *newtype) __attribute__((weak,alias("PMPI_Type_create_indexed_block")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Type_create_indexed_block_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Type_create_indexed_block_impl(int count,
                                         int blocklength,
                                         const int array_of_displacements[],
@@ -45,7 +48,7 @@ int MPIR_Type_create_indexed_block_impl(int count,
 				       0, /* dispinbytes */
 				       oldtype,
 				       &new_handle);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     MPIU_CHKLMEM_MALLOC_ORJUMP(ints, int *, (count + 2) * sizeof(int), mpi_errno, "content description");
 
@@ -64,9 +67,9 @@ int MPIR_Type_create_indexed_block_impl(int count,
 				           ints,
 				           NULL,
 				           &oldtype);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
-    MPIU_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
+    MPID_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
 
  fn_exit:
     MPIU_CHKLMEM_FREEALL();
@@ -81,7 +84,7 @@ int MPIR_Type_create_indexed_block_impl(int count,
 #undef FUNCNAME
 #define FUNCNAME MPI_Type_create_indexed_block
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
    MPI_Type_create_indexed_block - Create an indexed
      datatype with constant-sized blocks
@@ -137,7 +140,7 @@ int MPI_Type_create_indexed_block(int count,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_CREATE_INDEXED_BLOCK);
     
     /* Validate parameters and objects */
@@ -177,7 +180,7 @@ int MPI_Type_create_indexed_block(int count,
     
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_CREATE_INDEXED_BLOCK);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

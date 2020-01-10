@@ -18,6 +18,7 @@ noinst_PROGRAMS =      \
     attrerr            \
     attrerrcomm        \
     attrerrtype        \
+    attrdeleteget      \
     attr2type          \
     attrorder          \
     attrordercomm      \
@@ -27,7 +28,10 @@ noinst_PROGRAMS =      \
     fkeyval            \
     fkeyvalcomm        \
     fkeyvaltype        \
-    keyval_double_free
+    keyval_double_free \
+    keyval_double_free_comm \
+    keyval_double_free_type \
+    keyval_double_free_win
 
 EXTRA_DIST = testlist
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
- *  (C) 2008 by Argonne National Laboratory.
+ *  (C) 2009 by Argonne National Laboratory.
  *      See COPYRIGHT in top-level directory.
  */
 
@@ -177,8 +177,7 @@ HYD_status HYDT_bsci_init(const char *user_rmk, const char *user_launcher,
 
     /* This function is mandatory */
     if (HYDT_bsci_fns.launch_procs == NULL)
-        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR,
-                            "mandatory launch function undefined\n");
+        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "mandatory launch function undefined\n");
 
   fn_exit:
     HYDU_FUNC_EXIT();

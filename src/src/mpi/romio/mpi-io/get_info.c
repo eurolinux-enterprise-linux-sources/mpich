@@ -16,6 +16,8 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_get_info as PMPI_File_get_info
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_get_info(MPI_File fh, MPI_Info *info_used) __attribute__((weak,alias("PMPI_File_get_info")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -40,7 +42,7 @@ int MPI_File_get_info(MPI_File fh, MPI_Info *info_used)
     ADIO_File adio_fh;
     static char myname[] = "MPI_FILE_GET_INFO";
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     adio_fh = MPIO_File_resolve(fh);
 
@@ -55,6 +57,6 @@ int MPI_File_get_info(MPI_File fh, MPI_Info *info_used)
     /* --END ERROR HANDLING-- */
 
 fn_exit:
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
     return  error_code;
 }

@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Ssend  MPI_Ssend
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Ssend as PMPI_Ssend
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+              MPI_Comm comm) __attribute__((weak,alias("PMPI_Ssend")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -62,7 +65,7 @@ int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int t
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER_FRONT(MPID_STATE_MPI_SSEND);
     
     /* Validate handle parameters needing to be converted */
@@ -84,7 +87,7 @@ int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int t
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 
 	    MPIR_ERRTEST_COUNT(count, mpi_errno);
@@ -127,7 +130,7 @@ int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int t
     /* If a request was returned, then we need to block until the request 
        is complete */
     mpi_errno = MPIR_Progress_wait_request(request_ptr);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     mpi_errno = request_ptr->status.MPI_ERROR;
     MPID_Request_release(request_ptr);
@@ -138,7 +141,7 @@ int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int t
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT(MPID_STATE_MPI_SSEND);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
     
   fn_fail:

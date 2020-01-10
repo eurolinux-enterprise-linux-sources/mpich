@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Attr_delete  MPI_Attr_delete
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Attr_delete as PMPI_Attr_delete
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Attr_delete(MPI_Comm comm, int keyval) __attribute__((weak,alias("PMPI_Attr_delete")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -60,7 +62,7 @@ int MPI_Attr_delete(MPI_Comm comm, int keyval)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_ATTR_DELETE);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -84,7 +86,7 @@ int MPI_Attr_delete(MPI_Comm comm, int keyval)
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
 	    /* If comm_ptr is not valid, it will be reset to null */
             /* Validate keyval_ptr */
 	    MPID_Keyval_valid_ptr( keyval_ptr, mpi_errno );
@@ -103,7 +105,7 @@ int MPI_Attr_delete(MPI_Comm comm, int keyval)
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_ATTR_DELETE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Win_create_dynamic  MPI_Win_create_dynamic
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Win_create_dynamic as PMPI_Win_create_dynamic
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win) __attribute__((weak,alias("PMPI_Win_create_dynamic")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -94,7 +96,7 @@ int MPI_Win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_RMA_FUNC_ENTER(MPID_STATE_MPI_WIN_CREATE_DYNAMIC);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -120,7 +122,7 @@ int MPI_Win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate pointers */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno != MPI_SUCCESS) goto fn_fail;
         }
         MPID_END_ERROR_CHECKS;
@@ -137,13 +139,13 @@ int MPI_Win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
     win_ptr->errhandler = 0;
 
     /* return the handle of the window object to the user */
-    MPIU_OBJ_PUBLISH_HANDLE(*win, win_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*win, win_ptr->handle);
 
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_RMA_FUNC_EXIT(MPID_STATE_MPI_WIN_CREATE_DYNAMIC);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

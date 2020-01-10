@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Op_create  MPI_Op_create
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Op_create as PMPI_Op_create
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Op_create(MPI_User_function *user_fn, int commute, MPI_Op *op) __attribute__((weak,alias("PMPI_Op_create")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -60,7 +62,7 @@ void MPIR_Op_set_fc( MPI_Op op )
 }
 #endif
 
-#endif
+#endif /* MPICH_MPI_FROM_PMPI */
 
 #undef FUNCNAME
 #define FUNCNAME MPI_Op_create
@@ -106,7 +108,7 @@ int MPI_Op_create(MPI_User_function *user_fn, int commute, MPI_Op *op)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_OP_CREATE);
 
     /* ... body of routine ...  */
@@ -127,12 +129,12 @@ int MPI_Op_create(MPI_User_function *user_fn, int commute, MPI_Op *op)
 				   const int *, const MPI_Datatype *))user_fn;
     MPIU_Object_set_ref(op_ptr,1);
 
-    MPIU_OBJ_PUBLISH_HANDLE(*op, op_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*op, op_ptr->handle);
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_OP_CREATE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
     
   fn_fail:

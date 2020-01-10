@@ -11,7 +11,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_dbg_dump_cell
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPID_nem_dbg_dump_cell (volatile struct MPID_nem_cell *cell)
 {
     MPIDI_STATE_DECL(MPID_STATE_MPID_NEM_DBG_DUMP_CELL);
@@ -20,7 +20,7 @@ void MPID_nem_dbg_dump_cell (volatile struct MPID_nem_cell *cell)
 
     MPIU_DBG_MSG_D (ALL, TERSE, "  src = %6d", cell->pkt.mpich.source);
     MPIU_DBG_MSG_D (ALL, TERSE, "  dst = %6d", cell->pkt.mpich.dest);
-    MPIU_DBG_MSG_D (ALL, TERSE, "  len = %6d", cell->pkt.mpich.datalen);
+    MPIU_DBG_MSG_D (ALL, TERSE, "  len = %6d", (int)cell->pkt.mpich.datalen);
     MPIU_DBG_MSG_D (ALL, TERSE, "  sqn = %6d", cell->pkt.mpich.seqno);
     MPIU_DBG_MSG_D (ALL, TERSE, "  typ = %6d", cell->pkt.mpich.type);
 
@@ -56,7 +56,7 @@ void MPID_nem_dbg_print_vc_sendq(FILE *stream, MPIDI_VC_t *vc);
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_dbg_print_all_sendq
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPID_nem_dbg_print_vc_sendq(FILE *stream, MPIDI_VC_t *vc)
 {
     MPID_Request * sreq;
@@ -104,7 +104,7 @@ void MPID_nem_dbg_print_all_sendq(FILE *stream);
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_dbg_print_all_sendq
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 void MPID_nem_dbg_print_all_sendq(FILE *stream)
 {
     int i;

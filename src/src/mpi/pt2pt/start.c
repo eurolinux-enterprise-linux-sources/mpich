@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Start  MPI_Start
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Start as PMPI_Start
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Start(MPI_Request *request) __attribute__((weak,alias("PMPI_Start")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -52,7 +54,7 @@ int MPI_Start(MPI_Request *request)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER(MPID_STATE_MPI_START);
 
     /* Validate handle parameters needing to be converted */
@@ -93,7 +95,7 @@ int MPI_Start(MPI_Request *request)
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT(MPID_STATE_MPI_START);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

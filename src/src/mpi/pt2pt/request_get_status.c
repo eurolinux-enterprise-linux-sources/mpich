@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Request_get_status  MPI_Request_get_status
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Request_get_status as PMPI_Request_get_status
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status) __attribute__((weak,alias("PMPI_Request_get_status")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -60,7 +62,7 @@ int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_REQUEST_GET_STATUS);
 
     /* Check the arguments */
@@ -119,7 +121,7 @@ int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status)
         {
             if (status != MPI_STATUS_IGNORE)
             {
-                status->cancelled = request_ptr->status.cancelled;
+                MPIR_STATUS_SET_CANCEL_BIT(*status, MPIR_STATUS_GET_CANCEL_BIT(request_ptr->status));
             }
             mpi_errno = request_ptr->status.MPI_ERROR;
             break;
@@ -142,7 +144,7 @@ int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status)
 		{
 		    if (status != MPI_STATUS_IGNORE)
 		    {
-			status->cancelled = request_ptr->status.cancelled;
+			MPIR_STATUS_SET_CANCEL_BIT(*status, MPIR_STATUS_GET_CANCEL_BIT(request_ptr->status));
 		    }
 		    mpi_errno = prequest_ptr->status.MPI_ERROR;
 		}
@@ -158,7 +160,7 @@ int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status)
                     }
                     if (status != MPI_STATUS_IGNORE)
                     {
-                        status->cancelled = prequest_ptr->status.cancelled;
+                        MPIR_STATUS_SET_CANCEL_BIT(*status, MPIR_STATUS_GET_CANCEL_BIT(prequest_ptr->status));
                     }
                     if (mpi_errno == MPI_SUCCESS)
                     {
@@ -174,7 +176,7 @@ int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status)
                        make the error code available */
                     if (status != MPI_STATUS_IGNORE)
                     {
-                        status->cancelled = request_ptr->status.cancelled;
+                        MPIR_STATUS_SET_CANCEL_BIT(*status, MPIR_STATUS_GET_CANCEL_BIT(request_ptr->status));
                     }
                     mpi_errno = request_ptr->status.MPI_ERROR;
                 }
@@ -218,7 +220,7 @@ int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status)
             }
             if (status != MPI_STATUS_IGNORE)
             {
-                status->cancelled = request_ptr->status.cancelled;
+                MPIR_STATUS_SET_CANCEL_BIT(*status, MPIR_STATUS_GET_CANCEL_BIT(request_ptr->status));
             }
             MPIR_Request_extract_status(request_ptr, status);
 	    
@@ -244,7 +246,7 @@ int MPI_Request_get_status(MPI_Request request, int *flag, MPI_Status *status)
     
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_REQUEST_GET_STATUS);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

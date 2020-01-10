@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Op_free  MPI_Op_free
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Op_free as PMPI_Op_free
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Op_free(MPI_Op *op) __attribute__((weak,alias("PMPI_Op_free")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -62,7 +64,7 @@ int MPI_Op_free(MPI_Op *op)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_OP_FREE);
     
     MPID_Op_get_ptr( *op, op_ptr );
@@ -98,7 +100,7 @@ int MPI_Op_free(MPI_Op *op)
   fn_exit:
 #endif
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_OP_FREE);
-        MPIU_THREAD_CS_EXIT(ALLFUNC,);
+        MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
 	return mpi_errno;
 	
     /* --BEGIN ERROR HANDLING-- */

@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_free  MPI_Comm_free
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_free as PMPI_Comm_free
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_free(MPI_Comm *comm) __attribute__((weak,alias("PMPI_Comm_free")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,17 +29,17 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Comm_free_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Comm_free_impl(MPID_Comm * comm_ptr)
 {
-    return MPIR_Comm_release(comm_ptr, 0);
+    return MPIR_Comm_release(comm_ptr);
 }
 #endif
 
 #undef FUNCNAME
 #define FUNCNAME MPI_Comm_free
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
 MPI_Comm_free - Marks the communicator object for deallocation
 
@@ -80,7 +82,7 @@ int MPI_Comm_free(MPI_Comm *comm)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_FREE);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -103,7 +105,7 @@ int MPI_Comm_free(MPI_Comm *comm)
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
 	    /* If comm_ptr is not valid, it will be reset to null */
 	    
 	    /* Cannot free the predefined communicators */
@@ -130,7 +132,7 @@ int MPI_Comm_free(MPI_Comm *comm)
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_FREE);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

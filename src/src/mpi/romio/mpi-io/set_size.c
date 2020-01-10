@@ -16,6 +16,8 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_File_set_size as PMPI_File_set_size
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_File_set_size(MPI_File fh, MPI_Offset size) __attribute__((weak,alias("PMPI_File_set_size")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -46,7 +48,7 @@ int MPI_File_set_size(MPI_File fh, MPI_Offset size)
 		  MPI_DATATYPE_NULL, -1);
 #endif /* MPI_hpux */
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     adio_fh = MPIO_File_resolve(fh);
 
@@ -78,7 +80,11 @@ int MPI_File_set_size(MPI_File fh, MPI_Offset size)
     }
     /* --END ERROR HANDLING-- */
 
-    ADIOI_TEST_DEFERRED(adio_fh, "MPI_File_set_size", &error_code);
+    if (!ADIO_Feature(adio_fh, ADIO_SCALABLE_RESIZE)) {
+	/* rare stupid file systems (like NFS) need to carry out resize on all
+	 * processes */
+	ADIOI_TEST_DEFERRED(adio_fh, "MPI_File_set_size", &error_code);
+    }
 
     ADIO_Resize(adio_fh, size, &error_code);
     /* TODO: what to do with error code? */
@@ -93,7 +99,7 @@ int MPI_File_set_size(MPI_File fh, MPI_Offset size)
 #endif /* MPI_hpux */
 
 fn_exit:
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
 
     return error_code;
 }

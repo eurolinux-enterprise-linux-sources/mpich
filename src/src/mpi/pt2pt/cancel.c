@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Cancel  MPI_Cancel
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Cancel as PMPI_Cancel
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Cancel(MPI_Request *request) __attribute__((weak,alias("PMPI_Cancel")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Cancel_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Cancel_impl(MPID_Request *request_ptr)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -37,14 +39,14 @@ int MPIR_Cancel_impl(MPID_Request *request_ptr)
 	case MPID_REQUEST_SEND:
 	{
 	    mpi_errno = MPID_Cancel_send(request_ptr);
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	    break;
 	}
 
 	case MPID_REQUEST_RECV:
 	{
 	    mpi_errno = MPID_Cancel_recv(request_ptr);
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	    break;
 	}
 
@@ -68,7 +70,7 @@ int MPIR_Cancel_impl(MPID_Request *request_ptr)
                      */
 		    request_ptr->cc_ptr = request_ptr->partner_request->cc_ptr;
 		    mpi_errno = MPID_Cancel_send(request_ptr->partner_request);
-                    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 		} else {
 		    /* This is needed for persistent Bsend requests */
                     /* FIXME why do we directly access the partner request's
@@ -76,10 +78,10 @@ int MPIR_Cancel_impl(MPID_Request *request_ptr)
                      * of the partner req's cc field? */
                     mpi_errno = MPIR_Grequest_cancel(request_ptr->partner_request,
                                                      MPID_cc_is_complete(&request_ptr->partner_request->cc));
-                    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 		}
 	    } else {
-		MPIU_ERR_SETANDJUMP(mpi_errno,MPI_ERR_REQUEST,"**requestpersistactive");
+		MPIR_ERR_SETANDJUMP(mpi_errno,MPI_ERR_REQUEST,"**requestpersistactive");
 	    }
 	    break;
 	}
@@ -88,9 +90,9 @@ int MPIR_Cancel_impl(MPID_Request *request_ptr)
 	{
 	    if (request_ptr->partner_request != NULL) {
 		mpi_errno = MPID_Cancel_recv(request_ptr->partner_request);
-                if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+                if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	    } else {
-		MPIU_ERR_SETANDJUMP(mpi_errno,MPI_ERR_REQUEST,"**requestpersistactive");
+		MPIR_ERR_SETANDJUMP(mpi_errno,MPI_ERR_REQUEST,"**requestpersistactive");
 	    }
 	    break;
 	}
@@ -98,14 +100,14 @@ int MPIR_Cancel_impl(MPID_Request *request_ptr)
 	case MPID_UREQUEST:
 	{
             mpi_errno = MPIR_Grequest_cancel(request_ptr, MPID_cc_is_complete(&request_ptr->cc));
-            if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+            if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	    break;
 	}
 
 	/* --BEGIN ERROR HANDLING-- */
 	default:
 	{
-	    MPIU_ERR_SETANDJUMP(mpi_errno,MPI_ERR_INTERN,"**cancelunknown");
+	    MPIR_ERR_SETANDJUMP(mpi_errno,MPI_ERR_INTERN,"**cancelunknown");
 	}
 	/* --END ERROR HANDLING-- */
     }
@@ -122,7 +124,7 @@ int MPIR_Cancel_impl(MPID_Request *request_ptr)
 #undef FUNCNAME
 #define FUNCNAME MPI_Cancel
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
     MPI_Cancel - Cancels a communication request
 
@@ -162,7 +164,7 @@ int MPI_Cancel(MPI_Request *request)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER(MPID_STATE_MPI_CANCEL);
     
     /* Convert MPI object handles to object pointers */
@@ -190,7 +192,7 @@ int MPI_Cancel(MPI_Request *request)
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT(MPID_STATE_MPI_CANCEL);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

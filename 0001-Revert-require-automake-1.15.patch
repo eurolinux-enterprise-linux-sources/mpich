@@ -1,0 +1,29 @@
+From fce385fb31b7faed0ab01834831a920a66073807 Mon Sep 17 00:00:00 2001
+From: Michal Schmidt <mschmidt@redhat.com>
+Date: Tue, 21 Jun 2016 17:18:51 +0200
+Subject: [PATCH 1/4] Revert "require automake >= 1.15"
+
+This reverts commit 67577443f839be953e7c9c9dfd53c06cbd08525f
+to allow re-running automake in RHEL7.
+The reverted commit suggests that the newer automake was needed on Tru64,
+which does not concern us.
+---
+ autogen.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/autogen.sh b/autogen.sh
+index 5370dbf32d..bc33139189 100755
+--- a/autogen.sh
++++ b/autogen.sh
+@@ -506,7 +506,7 @@ fi
+ 
+ echo_n "Checking for automake version... "
+ recreate_tmp
+-ver=1.15
++ver=1.12.3
+ cat > .tmp/configure.ac<<EOF
+ AC_INIT(testver,1.0)
+ AC_CONFIG_AUX_DIR([m4])
+-- 
+2.7.4
+

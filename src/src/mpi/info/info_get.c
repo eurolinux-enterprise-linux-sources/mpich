@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Info_get  MPI_Info_get
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Info_get as PMPI_Info_get
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Info_get(MPI_Info info, const char *key, int valuelen, char *value, int *flag) __attribute__((weak,alias("PMPI_Info_get")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,29 +28,36 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Info_get_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
-void MPIR_Info_get_impl(MPID_Info *info_ptr, const char *key, int valuelen, char *value, int *flag)
+#define FCNAME MPL_QUOTE(FUNCNAME)
+int MPIR_Info_get_impl(MPID_Info *info_ptr, const char *key, int valuelen, char *value, int *flag)
 {
     MPID_Info *curr_ptr;
+    int err=0, mpi_errno=0;
+
     curr_ptr = info_ptr->next;
     *flag = 0;
 
     while (curr_ptr) {
         if (!strncmp(curr_ptr->key, key, MPI_MAX_INFO_KEY)) {
-            MPIU_Strncpy(value, curr_ptr->value, valuelen);
-            /* The following is problematic - if the user passes the
-               declared length, then this will access memory one
-               passed that point */
-            /* FIXME: The real fix is to change MPIU_Strncpy to
-               set the null at the end (always!) and return an error
-               if it had to truncate the result. */
-            /* value[valuelen] = '\0'; */
+            err = MPIU_Strncpy(value, curr_ptr->value, valuelen+1);
+            /* +1 because the MPI Standard says "In C, valuelen
+             * (passed to MPI_Info_get) should be one less than the
+             * amount of allocated space to allow for the null
+             * terminator*/
             *flag = 1;
             break;
         }
         curr_ptr = curr_ptr->next;
     }
-    return;
+
+    /* --BEGIN ERROR HANDLING-- */
+    if (err != 0)
+    {
+        mpi_errno = MPIR_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE, FCNAME, __LINE__, MPI_ERR_INFO_VALUE, "**infovallong", NULL);
+    }
+    /* --END ERROR HANDLING-- */
+
+    return mpi_errno;
 }
 
 #endif
@@ -59,7 +68,7 @@ void MPIR_Info_get_impl(MPID_Info *info_ptr, const char *key, int valuelen, char
 Input Parameters:
 + info - info object (handle)
 . key - key (string)
-- valuelen - length of value argument (integer)
+- valuelen - length of value argument, not including null terminator (integer)
 
 Output Parameters:
 + value - value (string)
@@ -80,7 +89,7 @@ Output Parameters:
 #undef FUNCNAME
 #define FUNCNAME MPI_Info_get
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPI_Info_get(MPI_Info info, const char *key, int valuelen, char *value,
 		 int *flag)
 {
@@ -90,7 +99,7 @@ int MPI_Info_get(MPI_Info info, const char *key, int valuelen, char *value,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_INFO_GET);
     
     /* Validate parameters, especially handles needing to be converted */
@@ -119,17 +128,17 @@ int MPI_Info_get(MPI_Info info, const char *key, int valuelen, char *value,
             if (mpi_errno) goto fn_fail;
 	    
 	    /* Check key */
-	    MPIU_ERR_CHKANDJUMP((!key), mpi_errno, MPI_ERR_INFO_KEY, 
+	    MPIR_ERR_CHKANDJUMP((!key), mpi_errno, MPI_ERR_INFO_KEY, 
 				"**infokeynull");
 	    keylen = (int)strlen(key);
-	    MPIU_ERR_CHKANDJUMP((keylen > MPI_MAX_INFO_KEY), mpi_errno, 
+	    MPIR_ERR_CHKANDJUMP((keylen > MPI_MAX_INFO_KEY), mpi_errno, 
 				MPI_ERR_INFO_KEY, "**infokeylong");
-	    MPIU_ERR_CHKANDJUMP((keylen == 0), mpi_errno, MPI_ERR_INFO_KEY, 
+	    MPIR_ERR_CHKANDJUMP((keylen == 0), mpi_errno, MPI_ERR_INFO_KEY, 
 				"**infokeyempty");
 
 	    /* Check value arguments */
 	    MPIR_ERRTEST_ARGNEG(valuelen, "valuelen", mpi_errno);
-	    MPIU_ERR_CHKANDSTMT((!value), mpi_errno, MPI_ERR_INFO_VALUE,goto fn_fail,
+	    MPIR_ERR_CHKANDSTMT((!value), mpi_errno, MPI_ERR_INFO_VALUE,goto fn_fail,
 				"**infovalnull");
         }
         MPID_END_ERROR_CHECKS;
@@ -137,19 +146,18 @@ int MPI_Info_get(MPI_Info info, const char *key, int valuelen, char *value,
 #   endif /* HAVE_ERROR_CHECKING */
 
     /* ... body of routine ...  */
-    MPIR_Info_get_impl(info_ptr, key, valuelen, value, flag);
+    mpi_errno = MPIR_Info_get_impl(info_ptr, key, valuelen, value, flag);
     /* ... end of body of routine ... */
+    if (mpi_errno) goto fn_fail;
 
-#ifdef HAVE_ERROR_CHECKING
   fn_exit:
-#endif
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_INFO_GET);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
     /* --BEGIN ERROR HANDLING-- */
-#   ifdef HAVE_ERROR_CHECKING
   fn_fail:
+#   ifdef HAVE_ERROR_CHECKING
     {
 	mpi_errno = MPIR_Err_create_code( mpi_errno, MPIR_ERR_RECOVERABLE,
 	    FCNAME, __LINE__, MPI_ERR_OTHER, 
@@ -157,7 +165,7 @@ int MPI_Info_get(MPI_Info info, const char *key, int valuelen, char *value,
 	    "**mpi_info_get %I %s %d %p %p", info, key, valuelen, value, flag);
     }
     mpi_errno = MPIR_Err_return_comm( NULL, FCNAME, mpi_errno );
-    goto fn_exit;
 #   endif
+    goto fn_exit;
     /* --END ERROR HANDLING-- */
 }

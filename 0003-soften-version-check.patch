@@ -1,0 +1,13 @@
+diff --git mpich-3.2/./src/binding/cxx/mpicxx.h.in~ mpich-3.2/./src/binding/cxx/mpicxx.h.in
+index 375c081e0e..24f1d6c2cc 100644
+--- mpich-3.2/./src/binding/cxx/mpicxx.h.in~
++++ mpich-3.2/./src/binding/cxx/mpicxx.h.in
+@@ -17,7 +17,7 @@
+ // between 3.2.3 and 3.4.3 (!!)  Normally such changes
+ // should only occur at major releases (e.g., version 3 to 4)
+ #ifdef __GNUC__ 
+-# if __GNUC__ >= @GNUCXX_VERSION@ 
++# if __GNUC__ >= @GNUCXX_VERSION@ && @GNUCXX_VERSION@ == 3
+ #  if __GNUC_MINOR__ > 2 && @GNUCXX_MINORVERSION@ == 2 
+ #  error 'Please use the same version of GCC and g++ for compiling MPICH and user MPI programs'
+ #  endif

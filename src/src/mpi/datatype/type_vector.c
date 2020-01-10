@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Type_vector  MPI_Type_vector
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Type_vector as PMPI_Type_vector
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Type_vector(int count, int blocklength, int stride, MPI_Datatype oldtype,
+                    MPI_Datatype *newtype) __attribute__((weak,alias("PMPI_Type_vector")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -26,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Type_vector_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Type_vector_impl(int count, int blocklength, int stride, MPI_Datatype oldtype, MPI_Datatype *newtype)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -41,7 +44,7 @@ int MPIR_Type_vector_impl(int count, int blocklength, int stride, MPI_Datatype o
 				 oldtype,
 				 &new_handle);
 
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     ints[0] = count;
     ints[1] = blocklength;
@@ -55,9 +58,9 @@ int MPIR_Type_vector_impl(int count, int blocklength, int stride, MPI_Datatype o
                                            ints,
                                            NULL,
                                            &oldtype);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
-    MPIU_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
+    MPID_OBJ_PUBLISH_HANDLE(*newtype, new_handle);
     
  fn_exit:
     return mpi_errno;
@@ -70,7 +73,7 @@ int MPIR_Type_vector_impl(int count, int blocklength, int stride, MPI_Datatype o
 #undef FUNCNAME
 #define FUNCNAME MPI_Type_vector
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
     MPI_Type_vector - Creates a vector (strided) datatype
 
@@ -104,7 +107,7 @@ int MPI_Type_vector(int count,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_TYPE_VECTOR);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -137,7 +140,7 @@ int MPI_Type_vector(int count,
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_TYPE_VECTOR);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

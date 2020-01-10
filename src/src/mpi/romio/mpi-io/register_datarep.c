@@ -16,6 +16,10 @@
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Register_datarep as PMPI_Register_datarep
 /* end of weak pragmas */
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Register_datarep(const char *datarep, MPI_Datarep_conversion_function *read_conversion_fn,
+			 MPI_Datarep_conversion_function *write_conversion_fn,
+			 MPI_Datarep_extent_function *dtype_file_extent_fn, void *extra_state) __attribute__((weak,alias("PMPI_Register_datarep")));
 #endif
 
 /* Include mapping from MPI->PMPI */
@@ -48,7 +52,7 @@ Input Parameters:
 .N fortran
   
   @*/
-int MPI_Register_datarep(const char *datarep,
+int MPI_Register_datarep(ROMIO_CONST char *datarep,
 			 MPI_Datarep_conversion_function *read_conversion_fn,
 			 MPI_Datarep_conversion_function *write_conversion_fn,
 			 MPI_Datarep_extent_function *dtype_file_extent_fn,
@@ -58,7 +62,7 @@ int MPI_Register_datarep(const char *datarep,
     ADIOI_Datarep *adio_datarep;
     static char myname[] = "MPI_REGISTER_DATAREP";
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    ROMIO_THREAD_CS_ENTER();
 
     /* --BEGIN ERROR HANDLING-- */
     /* check datarep name (use strlen instead of strnlen because
@@ -96,6 +100,19 @@ int MPI_Register_datarep(const char *datarep,
 	}
     }
 
+    /* Check Non-NULL Read and Write conversion function pointer */
+    /* Read and Write conversions are currently not supported.   */
+    if ( (read_conversion_fn != NULL) || (write_conversion_fn != NULL) )
+    {
+        error_code = MPIO_Err_create_code(MPI_SUCCESS, MPIR_ERR_RECOVERABLE,
+                                          myname, __LINE__,
+                                          MPI_ERR_CONVERSION,
+                                          "**drconvnotsupported", 0);
+
+	error_code = MPIO_Err_return_file(MPI_FILE_NULL, error_code);
+	goto fn_exit;
+    }
+
     /* check extent function pointer */
     if (dtype_file_extent_fn == NULL)
     {
@@ -122,7 +139,7 @@ int MPI_Register_datarep(const char *datarep,
     error_code = MPI_SUCCESS;
 
 fn_exit:
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    ROMIO_THREAD_CS_EXIT();
 
     return error_code;
 }

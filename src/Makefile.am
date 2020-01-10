@@ -41,16 +41,17 @@ doc1_src_txt =
 CLEAN_LOCAL_TARGETS =
 
 # used by nodist_pkgconfig_DATA
-pkgconfigdir = $(libdir)/pkgconfig
+pkgconfigdir = @pkgconfigdir@
 
 # contains all of the "errnames.txt" files that are used by maint/extracterrmsgs
 # to build src/mpi/errhan/defmsg.h
 errnames_txt_files = 
 
-external_subdirs = src/mpl src/openpa
-# FIXME how/where does external_libs/ldflags get used?
-external_ldflags = -L$(top_builddir)/src/mpl -L$(top_builddir)/src/openpa/src
-external_libs = -lmpl -lopa
+external_subdirs = @mplsrcdir@ @opasrcdir@
+external_ldflags = @mpllibdir@ @opalibdir@
+external_libs = @WRAPPER_LIBS@
+mpi_convenience_libs =
+pmpi_convenience_libs = @mpllib@ @opalib@
 
 # NOTE on our semi-unconventional usage of DIST_SUBDIRS:
 # The automake manual recommends thinking of DIST_SUBDIRS as the list of all
@@ -62,23 +63,6 @@ external_libs = -lmpl -lopa
 # condition as the corresponding SUBDIRS addition.
 DIST_SUBDIRS = ${external_subdirs}
 SUBDIRS = ${external_subdirs}
-
-
-# lib/lib@MPILIBNAME@.la always contains the "PMPI_" functions and all of the
-# functions and symbols that actually make up the MPICH implementation.  If
-# weak symbols are fully supported (such as on Linux), then this library also
-# contains weak symbols for "MPI_" aliasing the "PMPI_" symbols.  This lib also
-# always contains the F77 bindings, but not the F90 or C++ bindings.
-#
-# if weak symbols are not supported (such as on Darwin), then
-# lib/lib@PMPILIBNAME@.la contains duplicate builds of all of the "PMPI_" routines
-# as "MPI_" routines, but none of the implementation routines under the hood
-# (such as MPIR_Bcast_impl).
-lib_LTLIBRARIES = lib/lib@MPILIBNAME@.la
-lib_lib@MPILIBNAME@_la_SOURCES =
-nodist_lib_lib@MPILIBNAME@_la_SOURCES =
-lib_lib@MPILIBNAME@_la_LIBADD = $(external_libs)
-lib_lib@MPILIBNAME@_la_LDFLAGS = $(external_ldflags) $(ABIVERSIONFLAGS)
 
 ## Automake attempts to guess the correct linker among the various compilers
 ## for each language (see "How the Linker is Chosen" in the AM manual).
@@ -93,36 +77,123 @@ lib_lib@MPILIBNAME@_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(F77LD) \
 	$(AM_FFLAGS) $(FFLAGS) $(lib_lib@MPILIBNAME@_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+lib_lib@PMPILIBNAME@_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(F77LD) \
+	$(AM_FFLAGS) $(FFLAGS) $(lib_lib@PMPILIBNAME@_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 else !BUILD_F77_BINDING
 # link with libtool+CCLD
 lib_lib@MPILIBNAME@_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(lib_lib@MPILIBNAME@_la_CFLAGS) $(CFLAGS) \
 	$(lib_lib@MPILIBNAME@_la_LDFLAGS) $(LDFLAGS) -o $@
+lib_lib@PMPILIBNAME@_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(lib_lib@PMPILIBNAME@_la_CFLAGS) $(CFLAGS) \
+	$(lib_lib@PMPILIBNAME@_la_LDFLAGS) $(LDFLAGS) -o $@
 endif !BUILD_F77_BINDING
 
-if BUILD_PROFILING_LIB
-lib_LTLIBRARIES += lib/lib@PMPILIBNAME@.la
-## FIXME XXX DJG is this "-DMPICH..." flag is in CFLAGS now, should it really be in CPPFLAGS?
-lib_lib@PMPILIBNAME@_la_CFLAGS = $(AM_CFLAGS) -DMPICH_MPI_FROM_PMPI
-lib_lib@PMPILIBNAME@_la_SOURCES =
-lib_lib@PMPILIBNAME@_la_LIBADD = lib/lib@MPILIBNAME@.la $(lib_lib@MPILIBNAME@_la_LIBADD)
-lib_lib@PMPILIBNAME@_la_LDFLAGS = $(ABIVERSIONFLAGS)
-endif BUILD_PROFILING_LIB
+if BUILD_F77_BINDING
+if BUILD_FC_BINDING
+lib_lib@MPIFCLIBNAME@_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=FC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(FCLD) \
+	$(AM_FCFLAGS) $(FCFLAGS) $(lib_lib@MPIFCLIBNAME@_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+else !BUILD_FC_BINDING
+lib_lib@MPIFCLIBNAME@_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(F77LD) \
+	$(AM_FFLAGS) $(FFLAGS) $(lib_lib@MPIFCLIBNAME@_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+endif !BUILD_FC_BINDING
+endif BUILD_F77_BINDING
 
-# these are files that provide "MPI_" functions with "PMPI_" profiling versions
-# (for the C language bindings only, fortran & C++ are handled separately)
-mpi_sources = 
+## Create lists of files for different libraries
+##
+## mpi_sources: When compiled with -DMPICH_MPI_FROM_PMPI, these files
+## provide "MPI_" public functions for the C bindings and end up in
+## lib@MPILIBNAME@.  When compiled without this macro, these files
+## provide "PMPI_" public functions for the C bindings as well as a
+## few other internal MPICH functions, all of which end up in
+## lib@PMPILIBNAME@ (which is the same as lib@MPILIBNAME@ on systems
+## that support weak symbols).
+##
+## mpi_f77_sources: When compiled with -DMPICH_MPI_FROM_PMPI, these
+## files provide the "mpi_" public functions for the F77 bindings and
+## end up in lib@MPIFCLIBNAME@.
+##
+## mpi_fc_sources: When compiled with -DMPICH_MPI_FROM_PMPI, these
+## files provide the "mpi_" public functions for the F90+ bindings and
+## end up in lib@MPIFCLIBNAME@.
+##
+## mpi_cxx_sources: When compiled with -DMPICH_MPI_FROM_PMPI, these
+## files provide the "MPI" public functions for the C++ bindings and
+## end up in lib@MPICXXLIBNAME@.
+##
+## mpi_core_sources: These files are internal non-public functions
+## that are used by all bindings.
+mpi_sources =
+mpi_f77_sources =
+mpi_fc_sources =
+mpi_fc_modules =
+mpi_cxx_sources =
+mpi_core_sources =
+
+lib_LTLIBRARIES =
 
 # include our subdir automake fragments
 include maint/Makefile.mk
 include src/Makefile.mk
 
-lib_lib@MPILIBNAME@_la_SOURCES += $(mpi_sources)
-
 if BUILD_PROFILING_LIB
-lib_lib@PMPILIBNAME@_la_SOURCES += $(mpi_sources)
+# dropping mpi_fc_sources and mpi_cxx_sources from libmpmpi since they
+# don't contribute any PMPI symbols.
+lib_LTLIBRARIES += lib/lib@PMPILIBNAME@.la
+lib_lib@PMPILIBNAME@_la_SOURCES = $(mpi_sources) $(mpi_f77_sources) $(mpi_core_sources)
+lib_lib@PMPILIBNAME@_la_LDFLAGS = $(external_ldflags) $(ABIVERSIONFLAGS)
+lib_lib@PMPILIBNAME@_la_CPPFLAGS = $(AM_CPPFLAGS) -DF77_USE_PMPI
+lib_lib@PMPILIBNAME@_la_LIBADD = $(external_libs) $(pmpi_convenience_libs)
+EXTRA_lib_lib@PMPILIBNAME@_la_DEPENDENCIES = $(pmpi_convenience_libs)
+
+# lib@MPILIBNAME@.la might depend on lib@PMPILIBNAME@.la.  We add them
+# in that order to lib_LTLIBRARIES so libtool doesn't get
+# confused. (see https://bugzilla.redhat.com/show_bug.cgi?id=91110)
+lib_LTLIBRARIES += lib/lib@MPILIBNAME@.la
+lib_lib@MPILIBNAME@_la_SOURCES = $(mpi_sources)
+lib_lib@MPILIBNAME@_la_LDFLAGS = $(ABIVERSIONFLAGS)
+lib_lib@MPILIBNAME@_la_CPPFLAGS = $(AM_CPPFLAGS) -DMPICH_MPI_FROM_PMPI
+lib_lib@MPILIBNAME@_la_LIBADD = lib/lib@PMPILIBNAME@.la $(mpi_convenience_libs)
+
+else !BUILD_PROFILING_LIB
+
+lib_LTLIBRARIES += lib/lib@MPILIBNAME@.la
+lib_lib@MPILIBNAME@_la_SOURCES = $(mpi_sources) $(mpi_core_sources)
+lib_lib@MPILIBNAME@_la_LDFLAGS = $(external_ldflags) $(ABIVERSIONFLAGS)
+lib_lib@MPILIBNAME@_la_CPPFLAGS = $(AM_CPPFLAGS)
+lib_lib@MPILIBNAME@_la_LIBADD = $(external_libs) $(pmpi_convenience_libs) $(mpi_convenience_libs)
+EXTRA_lib_lib@MPILIBNAME@_la_DEPENDENCIES = $(pmpi_convenience_libs) $(mpi_convenience_libs)
+endif !BUILD_PROFILING_LIB
+
+if BUILD_F77_BINDING
+lib_LTLIBRARIES += lib/lib@MPIFCLIBNAME@.la
+lib_lib@MPIFCLIBNAME@_la_CPPFLAGS = $(AM_CPPFLAGS)
+if BUILD_PROFILING_LIB
+lib_lib@MPIFCLIBNAME@_la_CPPFLAGS += -DMPICH_MPI_FROM_PMPI -DUSE_ONLY_MPI_NAMES
 endif BUILD_PROFILING_LIB
+lib_lib@MPIFCLIBNAME@_la_SOURCES = $(mpi_f77_sources)
+if BUILD_FC_BINDING
+modinc_HEADERS = $(mpi_fc_modules)
+lib_lib@MPIFCLIBNAME@_la_SOURCES += $(mpi_fc_sources)
+endif BUILD_FC_BINDING
+lib_lib@MPIFCLIBNAME@_la_LDFLAGS = $(ABIVERSIONFLAGS)
+lib_lib@MPIFCLIBNAME@_la_LIBADD = lib/lib@MPILIBNAME@.la
+endif BUILD_F77_BINDING
+
+if BUILD_CXX_BINDING
+lib_LTLIBRARIES += lib/lib@MPICXXLIBNAME@.la
+lib_lib@MPICXXLIBNAME@_la_SOURCES = $(mpi_cxx_sources)
+lib_lib@MPICXXLIBNAME@_la_LDFLAGS = $(ABIVERSIONFLAGS)
+lib_lib@MPICXXLIBNAME@_la_LIBADD = lib/lib@MPILIBNAME@.la
+endif BUILD_CXX_BINDING
 
 # build the current directory and then the examples directory after everything else
 SUBDIRS += . examples
@@ -149,20 +220,57 @@ CLEAN_LOCAL_TARGETS += test-clean
 ## better approach might be to have each Makefile.mk append to a
 ## common set of rules.
 install-exec-hook:
-	for e in ${DESTDIR}${bindir}/mpicc ${DESTDIR}${bindir}/mpicxx \
-		${DESTDIR}${bindir}/mpif77 ${DESTDIR}${bindir}/mpif90 ; do \
+	for e in ${DESTDIR}${bindir}/@MPICC_NAME@ ${DESTDIR}${bindir}/@MPICXX_NAME@ \
+		${DESTDIR}${bindir}/@MPIF77_NAME@ ${DESTDIR}${bindir}/@MPIFORT_NAME@ ; do \
 		if test -e $${e} ; then \
-			sed -e 's|^prefix=.*|prefix=${prefix}|g' \
-				-e 's|^exec_prefix=.*|exec_prefix=${exec_prefix}|g' \
-				-e 's|^sysconfdir=.*|sysconfdir=${sysconfdir}|g' \
-				-e 's|^includdir=.*|includedir=${includedir}|g' \
-				-e 's|^libdir=.*|libdir=${libdir}|g' $${e} > $${e}.tmp ; \
+			sed -e 's|__PREFIX_TO_BE_FILLED_AT_INSTALL_TIME__|${prefix}|g' \
+				-e 's|__EXEC_PREFIX_TO_BE_FILLED_AT_INSTALL_TIME__|${exec_prefix}|g' \
+				-e 's|__SYSCONFDIR_TO_BE_FILLED_AT_INSTALL_TIME__|${sysconfdir}|g' \
+				-e 's|__INCLUDEDIR_TO_BE_FILLED_AT_INSTALL_TIME__|${includedir}|g' \
+				-e 's|__LIBDIR_TO_BE_FILLED_AT_INSTALL_TIME__|${libdir}|g' $${e} > $${e}.tmp ; \
 			$(INSTALL_SCRIPT) $${e}.tmp $${e} ; \
 			rm -f $${e}.tmp ; \
 		fi ; \
 	done ; \
-	if test -e ${DESTDIR}${bindir}/mpicxx ; then \
-		cd ${DESTDIR}${bindir} && ln -f -s mpicxx mpic++ ; fi
+	if test -e ${DESTDIR}${bindir}/@MPICXX_NAME@ ; then \
+		if test "@MPICXX_NAME@" != "@MPICPP_NAME@" ; then \
+			cd ${DESTDIR}${bindir} && ln -f -s @MPICXX_NAME@ @MPICPP_NAME@ ; \
+		fi ; \
+	fi ; \
+	if test -e ${DESTDIR}${bindir}/@MPIFORT_NAME@ ; then \
+		if test "@MPIFORT_NAME@" != "@MPIF90_NAME@" ; then \
+			cd ${DESTDIR}${bindir} && ln -f -s @MPIFORT_NAME@ @MPIF90_NAME@ ; \
+		fi ; \
+	fi ; \
+	if test -e ${DESTDIR}${bindir}/@MPIFORT_NAME@ -a ! -e ${DESTDIR}${bindir}/@MPIF77_NAME@ ; then \
+		if test "@MPIFORT_NAME@" != "@MPIF77_NAME@" ; then \
+			cd ${DESTDIR}${bindir} && ln -f -s @MPIFORT_NAME@ @MPIF77_NAME@ ; \
+		fi ; \
+	fi ; \
+	if test -e ${DESTDIR}${libdir}/lib@MPILIBNAME@@SHLIB_EXT@ ; then \
+		if test "@MPILIBNAME@" != "mpl" ; then \
+			cd ${DESTDIR}${libdir} && ln -f -s lib@MPILIBNAME@@SHLIB_EXT@ libmpl@SHLIB_EXT@ ; \
+		fi ; \
+		if test "@MPILIBNAME@" != "opa" ; then \
+			cd ${DESTDIR}${libdir} && ln -f -s lib@MPILIBNAME@@SHLIB_EXT@ libopa@SHLIB_EXT@ ; \
+		fi ; \
+		if test "@MPILIBNAME@" != "mpich" ; then \
+			cd ${DESTDIR}${libdir} && ln -f -s lib@MPILIBNAME@@SHLIB_EXT@ libmpich@SHLIB_EXT@ ; \
+		fi ; \
+	fi ; \
+	if test -e ${DESTDIR}${libdir}/lib@MPIFCLIBNAME@@SHLIB_EXT@ ; then \
+		if test "@MPIFCLIBNAME@" != "fmpich" ; then \
+			cd ${DESTDIR}${libdir} && ln -f -s lib@MPIFCLIBNAME@@SHLIB_EXT@ libfmpich@SHLIB_EXT@ ; \
+		fi ; \
+		if test "@MPIFCLIBNAME@" != "mpichf90" ; then \
+			cd ${DESTDIR}${libdir} && ln -f -s lib@MPIFCLIBNAME@@SHLIB_EXT@ libmpichf90@SHLIB_EXT@ ; \
+		fi ; \
+	fi ; \
+	if test -e ${DESTDIR}${libdir}/lib@MPICXXLIBNAME@@SHLIB_EXT@ ; then \
+		if test "@MPICXXLIBNAME@" != "mpichcxx" ; then \
+			cd ${DESTDIR}${libdir} && ln -f -s lib@MPICXXLIBNAME@@SHLIB_EXT@ libmpichcxx@SHLIB_EXT@ ; \
+		fi ; \
+	fi
 
 # the configure step checks for the 'lib' dir to decide whether a source
 # directory has been previously used for an in-path build before allowing a
@@ -179,7 +287,14 @@ DISTCLEANFILES += config.system
 # we can only have one clean-local, so we hook into it via conditionally
 # defined variables in the dependencies section
 clean-local: $(CLEAN_LOCAL_TARGETS)
-	rm -f ${DESTDIR}${bindir}/mpic++
+
+uninstall-local:
+	for x in @MPICPP_NAME@ @MPIF90_NAME@ @MPIF77_NAME@ ; do \
+		rm -f ${DESTDIR}${bindir}/$$x ; \
+	done ; \
+	for x in mpl opa mpich fmpich mpichf90 mpichcxx ; do \
+		rm -f ${DESTDIR}${libdir}/lib$$x@SHLIB_EXT@ ; \
+	done
 
 # --------------------------------------------------------------------------
 #  coverage rules
@@ -206,33 +321,87 @@ gcov_sources = $(lib_lib@MPILIBNAME@_la_SOURCES)
 #
 # Gcov has no good way to deal with source files that have been compiled twice
 # into two different object files, such as
-#   bcast.c --> {bcast.o,lib_libpmpich_la-bcast.o}
+#   bcast.c --> {bcast.o,lib_libpmpi_la-bcast.o}
 # It still generates a bcast.c.gcov output for each object file.  Long file
 # names and preserved paths do not help with this problem.
-# What we can do in this case is to move the second files to a separate 
-# directory, rename name, and run the GCOV on the new files.
+# What we can do in this case is to move the second files to a separate
+# directory, rename name, and run gcov on the new files.
 # For the web-based coverage reports, the gcov output for the two files
-# needs to be merged; see maint/gcovmerge .  
-# To make it easier to re-run the coverage generation, we copy, rather than 
+# needs to be merged; see maint/gcovmerge .
+# To make it easier to re-run the coverage generation, we copy, rather than
 # move, when there are two object files for each source file.
+# A change to the build procedure broke this target.  This is a partial though
+# nearly complete fix to the broken build process.  The generated coverage
+# files after the fix appear mostly correct, though there appear to also be
+# errors in the gcov output itself (the format of this output changes
+# frequently).  However, the coverage analysis is still valuable and has
+# identified missing tests.
+#
+# The problem:
+#   The source file is foo.c
+#   gcov expects foo.o, foo.gcno, and foo.gcda files
+#   The MPICH build process, unfortunately, does not produce a foo.o file;
+#   instead, it produces a .libs/lib_lib@MPILIBNAME@_la-foo.o file (and
+#   similarly .libs/lib_lib@MPILIBNAME@_la_foo.gcno etc.
+#   This change broke this coverage target.  If further changes to the
+#   naming conventions for object files are made, make sure that the
+#   coverage target is also modified to correspond to those changes.
+#
 coverage:
 	@for file in $(gcov_sources) ; do \
 	    dir=`dirname $$file` ; \
 	    bname=`basename $$file` ; \
 	    aux=`echo $$bname | sed -e 's,\.*$$,,'` ; \
-	    echo "( $(GCOV) -b -f -o $$file $$file && mv $${bname}.gcov $$dir )" ; \
-	    ( $(GCOV) -b -f -o $$file $$file && mv $${bname}.gcov $$dir ) ; \
 	    sname=`echo $$bname | sed -e 's/\.[^\.]*$$//'` ;\
+	    if [ -s "$$dir/$$sname.o" ] ; then \
+	        echo "( $(GCOV) -b -f -o $$file $$file && mv $$bname.gcov $$dir )" ; \
+	        ( $(GCOV) -b -f -o $$file $$file && mv $$bname.gcov $$dir ) ; \
+	    elif [ -s "$$dir/lib_lib@MPILIBNAME@_la-$$sname.o" ] ; then \
+	        if [ ! -d $$dir-mpi ] ; then mkdir $$dir-mpi ; fi ; \
+		echo "Copying name-mangled files to $$dir-mpi" ; \
+		for pfile in $$dir/.libs/lib_lib@MPILIBNAME@_la-$$sname.* ; do \
+		     nfile=`echo $$pfile | sed -e 's/lib_lib@MPILIBNAME@_la-//'` ;\
+		     nfile=`basename $$nfile` ; \
+		     echo "cp -p $$pfile $$dir-mpi/$$nfile" ; \
+		     cp -p $$pfile $$dir-mpi/$$nfile ; \
+		done ; \
+		for pfile in $$dir/lib_lib@MPILIBNAME@_la-$$sname.o ; do \
+		     nfile=`echo $$pfile | sed -e 's/lib_lib@MPILIBNAME@_la-//'` ;\
+		     nfile=`basename $$nfile` ; \
+		     echo "( cd $$dir-mpi && $(GCOV) -b -f $$nfile )" ; \
+		     ( cd $$dir-mpi && $(GCOV) -b -f $$nfile ) ; \
+		     if [ ! -s $$dir-mpi/$$bname.gcov ] ; then \
+			echo "No $$bname.gcov file created" ;\
+		     else \
+		        mv $$dir-mpi/$$bname.gcov $$dir ; \
+		     fi ; \
+		done ; \
+	    else \
+		echo "Missing object file for source $$file" ; \
+	    fi ; \
 	    if [ -s "$$dir/lib_lib@PMPILIBNAME@_la-$$sname.o" ] ; then \
 	        if [ ! -d $$dir-pmpi ] ; then mkdir $$dir-pmpi ; fi ; \
-		for pfile in $$dir/lib_lib@PMPILIBNAME@_la-$$sname.* ; do \
+		echo "Copying name-mangled files to $$dir-pmpi" ; \
+		for pfile in $$dir/.libs/lib_lib@PMPILIBNAME@_la-$$sname.* ; do \
 		     nfile=`echo $$pfile | sed -e 's/lib_lib@PMPILIBNAME@_la-//'` ;\
 		     nfile=`basename $$nfile` ; \
-		     cp $$pfile $$dir-pmpi/$$nfile ; \
+		     echo "cp -p $$pfile $$dir-pmpi/$$nfile" ; \
+		     cp -p $$pfile $$dir-pmpi/$$nfile ; \
+		done ; \
+		for pfile in $$dir/lib_lib@PMPILIBNAME@_la-$$sname.o ; do \
+		     nfile=`echo $$pfile | sed -e 's/lib_lib@PMPILIBNAME@_la-//'` ;\
+		     nfile=`basename $$nfile` ; \
 		     echo "( cd $$dir-pmpi && $(GCOV) -b -f $$nfile )" ; \
 		     ( cd $$dir-pmpi && $(GCOV) -b -f $$nfile ) ; \
-		     $(srcdir)/maint/gcovmerge $$dir-pmpi/$$bname.gcov \
+		     if [ -s $$dir/$$bname.gcov ] ; then \
+		         echo "gcovmerge $$dir-pmpi/$$bname.gcov $$dir/$$bname.gcov > $$dir/$$bname.gcov.merge" ; \
+		         $(srcdir)/maint/gcovmerge $$dir-pmpi/$$bname.gcov \
 				$$dir/$$bname.gcov > $$dir/$$bname.gcov.merge ;\
+		     else \
+			 echo "Did not find file $$dir/$$bname.gcov" ; \
+		         echo "mv $$dir-pmpi/$$bname.gcov $$dir/$$bname.gcov";\
+			 mv $$dir-pmpi/$$bname.gcov $$dir/$$bname.gcov ; \
+		     fi ;\
 		done ; \
 	    fi ; \
 	    rm -f *.gcov ; \
@@ -286,23 +455,30 @@ mandoc_path3=$(abs_top_builddir)/man/man3
 htmldoc_path1=$(abs_top_builddir)/www/www1
 htmldoc_path3=$(abs_top_builddir)/www/www3
 doctext_docnotes=$(abs_top_srcdir)/maint/docnotes
+# Provide an easily replaced url root for the generated index file.
+# You can override this with URL desired in the index file generated by doctext.
+# You can ignore this if you don't use mapnames or tohtml to add links
+# to the MPI manual pages to documents.
+htmldoc_root3="--your-url-here--"
 
 # Implicit suffix rules to cause the docs to be built.  These are a bit of a
 # hack, but using the implicit rules like this instead of a shell for loop
 # permits make -jN to work.
 .c.man-phony:
 	$(doctextman_verbose)$(DOCTEXT) -man -mpath $(mandoc_path3) -ext 3 \
-	    -heading MPI -quotefmt $(doctext_docnotes) $<
+	    -heading MPI -quotefmt -nolocation $(doctext_docnotes) $<
 .c.html-phony:
 	$(doctexthtml_verbose)$(DOCTEXT) -html -mpath $(htmldoc_path3) \
-	    -heading MPI -quotefmt $(doctext_docnotes) $<
+	    -heading MPI -quotefmt -nolocation \
+	    -index $(htmldoc_path3)/mpi.cit -indexdir $(htmldoc_root3) \
+		$(doctext_docnotes) $<
 
 .txt.man1-phony:
 	$(doctextman_verbose)$(DOCTEXT) -man -mpath $(mandoc_path1) -ext 1 \
-	    -heading MPI -quotefmt $(doctext_docnotes) $<
+	    -heading MPI -quotefmt -nolocation $(doctext_docnotes) $<
 .txt.html1-phony:
 	$(doctexthtml_verbose)$(DOCTEXT) -html -mpath $(htmldoc_path1) \
-	    -heading MPI -quotefmt $(doctext_docnotes) $<
+	    -heading MPI -quotefmt -nolocation $(doctext_docnotes) $<
 
 # use mandoc-local target to force directory creation before running DOCTEXT
 mandoc:
@@ -350,12 +526,20 @@ htmldoc-local: $(mpi_sources:.c=.html-phony) $(doc1_src_txt:.txt=.html1-phony)
 		fi \
 	    fi \
 	done
+	$(srcdir)/maint/createhtmlindex -wwwroot=$(top_builddir)
 
 # install-man does not have a special "-local" target for some reason
 INSTALL_DATA_LOCAL_TARGETS += install-man-local
 # this is a variation on the recipe that was previously generated by simplemake
 install-man-local:
-	@if test -d $(builddir)/man && cd $(builddir)/man ; then \
+	@dir= ; \
+	if test -d $(builddir)/man ; then \
+	 dir=$(builddir)/man ; \
+	elif test -d $(srcdir)/man ; then \
+	 dir=$(srcdir)/man ; \
+	fi ; \
+	export dir ; \
+	if test ! -z $$dir && test -d $$dir && cd $$dir ; then \
 	 for name in * ; do \
 	  if [ "$$name" = "*" ] ; then continue ; fi ; \
 	  if [ -f $$name ] ; then \
@@ -379,8 +563,17 @@ install-man-local:
 	 done ; \
 	fi
 
+INSTALL_DATA_LOCAL_TARGETS += install-html-local
 install-html-local:
-	@if test -d $(builddir)/www && cd $(builddir)/www ; then \
+	@dir= ; \
+	if test -d $(builddir)/www ; then \
+	 dir=$(builddir)/www ; \
+	elif test -d $(srcdir)/www ; then \
+	 dir=$(srcdir)/www ; \
+	fi ; \
+	export dir ; \
+	if test ! -z $$dir && test -d $$dir && cd $$dir ; then \
+	 if [ ! -e ${DESTDIR}${htmldir} ] ; then $(MKDIR_P) ${DESTDIR}${htmldir} ; fi ; \
 	 for name in * ; do \
 	  if [ "$$name" = "*" ] ; then continue ; fi ; \
 	  if [ -f $$name ] ; then \
@@ -419,7 +612,6 @@ install-pdf-local:
 	if [ ! -e ${DESTDIR}${docdir} ] ; then $(MKDIR_P) ${DESTDIR}${docdir} ; fi
 	if [ -s $(srcdir)/doc/userguide/user.pdf ] ; then $(INSTALL_DATA) $(srcdir)/doc/userguide/user.pdf ${DESTDIR}${docdir}/user.pdf ; fi
 	if [ -s $(srcdir)/doc/installguide/install.pdf ] ; then $(INSTALL_DATA) $(srcdir)/doc/installguide/install.pdf ${DESTDIR}${docdir}/install.pdf ; fi
-	if [ -s $(srcdir)/doc/smpd/smpd_pmi.pdf ] ; then $(INSTALL_DATA) $(srcdir)/doc/smpd/smpd_pmi.pdf ${DESTDIR}${docdir}/smpd_pmi.pdf ; fi
 	if [ -s $(srcdir)/doc/logging/logging.pdf ] ; then $(INSTALL_DATA) $(srcdir)/doc/logging/logging.pdf ${DESTDIR}${docdir}/logging.pdf ; fi
 
 include $(top_srcdir)/doc/Makefile.mk

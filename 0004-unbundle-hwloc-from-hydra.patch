@@ -1,0 +1,119 @@
+From c832b1ca5566b79e73e07e794b9724b86ade8fb3 Mon Sep 17 00:00:00 2001
+From: Michal Schmidt <mschmidt@redhat.com>
+Date: Thu, 19 May 2016 18:16:05 +0200
+Subject: [PATCH 4/4] unbundle hwloc from hydra
+
+---
+ src/pm/hydra/autogen.sh                   |  3 --
+ src/pm/hydra/configure.ac                 | 49 ++++++++-----------------------
+ src/pm/hydra/tools/topo/hwloc/Makefile.mk | 11 -------
+ 3 files changed, 13 insertions(+), 50 deletions(-)
+
+diff --git a/src/pm/hydra/autogen.sh b/src/pm/hydra/autogen.sh
+index e13fb9fb10..70429b1c3c 100755
+--- a/src/pm/hydra/autogen.sh
++++ b/src/pm/hydra/autogen.sh
+@@ -9,9 +9,6 @@ fi
+ echo "=== running autoreconf in 'mpl' ==="
+ (cd mpl && $autoreconf ${autoreconf_args:-"-vif"}) || exit 1
+ 
+-echo "=== running autoreconf in 'tools/topo/hwloc/hwloc' ==="
+-(cd tools/topo/hwloc/hwloc && ./autogen.sh) || exit 1
+-
+ echo "=== running autoreconf in '.' ==="
+ $autoreconf ${autoreconf_args:-"-vif"} || exit 1
+ 
+diff --git a/src/pm/hydra/configure.ac b/src/pm/hydra/configure.ac
+index d994d4bd1a..f7ca3f1845 100644
+--- a/src/pm/hydra/configure.ac
++++ b/src/pm/hydra/configure.ac
+@@ -407,44 +407,23 @@ AC_MSG_RESULT([$hydra_topolib_list])
+ 
+ hydra_topolibs="`echo $hydra_topolib_list | sed -e 's/:/ /g' -e 's/,/ /g'`"
+ 
+-# Unconditionally include the hwloc macros, even if we are using an
+-# external hwloc (or hwloc is disabled). This is needed for the
+-# AM_CONDITIONALS that we will set later.
+-m4_include([tools/topo/hwloc/hwloc/config/hwloc.m4])
+-m4_include([tools/topo/hwloc/hwloc/config/hwloc_check_attributes.m4])
+-m4_include([tools/topo/hwloc/hwloc/config/hwloc_check_visibility.m4])
+-m4_include([tools/topo/hwloc/hwloc/config/hwloc_check_vendor.m4])
+-m4_include([tools/topo/hwloc/hwloc/config/hwloc_components.m4])
+-m4_include([tools/topo/hwloc/hwloc/config/hwloc_pkg.m4])
+-
+ have_hwloc=no
+ for hydra_topolib in ${hydra_topolibs}; do
+     case "$hydra_topolib" in
+ 	hwloc)
+-		if test "$with_hwloc_prefix" = "embedded" ; then
+-		   HWLOC_SETUP_CORE([tools/topo/hwloc/hwloc],[have_hwloc=yes],[have_hwloc=no],[1])
+-		   # Only build hwloc in embedded mode
+-		   if test "$have_hwloc" = "yes" ; then
+-		      hydra_use_embedded_hwloc=yes
+-		      CFLAGS="$HWLOC_EMBEDDED_CFLAGS $CFLAGS"
+-		      CPPFLAGS="$HWLOC_EMBEDDED_CPPFLAGS $CPPFLAGS"
+-		      LIBS="$HWLOC_EMBEDDED_LIBS $LIBS"
+-		   fi
+-                else
+-                    AC_CHECK_HEADERS([hwloc.h])
+-                    # hwloc_topology_set_pid was added in hwloc-1.0.0, which is our minimum
+-                    # required version
+-                    AC_CHECK_LIB([hwloc],[hwloc_topology_set_pid])
+-                    AC_MSG_CHECKING([if non-embedded hwloc works])
+-                    if test "$ac_cv_header_hwloc_h" = "yes" -a "$ac_cv_lib_hwloc_hwloc_topology_set_pid" = "yes" ; then
+-                        have_hwloc=yes
+-                    fi
+-                    AC_MSG_RESULT([$have_hwloc])
+-                fi
+-
+-                # FIXME: Disable hwloc on Cygwin for now. The hwloc package, atleast as of 1.0.2,
+-                # does not install correctly on Cygwin
+-                AS_CASE([$host], [*-*-cygwin], [have_hwloc=no])
++	        AC_CHECK_HEADERS([hwloc.h])
++	        # hwloc_topology_set_pid was added in hwloc-1.0.0, which is our minimum
++	        # required version
++	        AC_CHECK_LIB([hwloc],[hwloc_topology_set_pid])
++	        AC_MSG_CHECKING([if non-embedded hwloc works])
++	        if test "$ac_cv_header_hwloc_h" = "yes" -a "$ac_cv_lib_hwloc_hwloc_topology_set_pid" = "yes" ; then
++	            have_hwloc=yes
++	        fi
++	        AC_MSG_RESULT([$have_hwloc])
++
++	        # FIXME: Disable hwloc on Cygwin for now. The hwloc package, atleast as of 1.0.2,
++	        # does not install correctly on Cygwin
++	        AS_CASE([$host], [*-*-cygwin], [have_hwloc=no])
+ 
+ 		if test "$have_hwloc" = "yes" ; then
+ 		   AC_DEFINE(HAVE_HWLOC,1,[Define if hwloc is available])
+@@ -476,9 +455,7 @@ else
+    AC_DEFINE(HYDRA_DEFAULT_TOPOLIB,NULL,[Default processor topology library])
+ fi
+ 
+-HWLOC_DO_AM_CONDITIONALS
+ AM_CONDITIONAL([hydra_have_hwloc], [test "${have_hwloc}" = "yes"])
+-AM_CONDITIONAL([hydra_use_embedded_hwloc], [test "${hydra_use_embedded_hwloc}" = "yes"])
+ 
+ AC_MSG_CHECKING([available processor topology libraries])
+ AC_MSG_RESULT([$available_topolibs])
+diff --git a/src/pm/hydra/tools/topo/hwloc/Makefile.mk b/src/pm/hydra/tools/topo/hwloc/Makefile.mk
+index 441ea1ad13..dc161daa5c 100644
+--- a/src/pm/hydra/tools/topo/hwloc/Makefile.mk
++++ b/src/pm/hydra/tools/topo/hwloc/Makefile.mk
+@@ -7,14 +7,3 @@
+ libhydra_la_SOURCES += tools/topo/hwloc/topo_hwloc.c
+ 
+ noinst_HEADERS += tools/topo/hwloc/topo_hwloc.h
+-
+-if hydra_use_embedded_hwloc
+-AM_CPPFLAGS += -I$(top_srcdir)/tools/topo/hwloc/hwloc/include \
+-	-I$(top_builddir)/tools/topo/hwloc/hwloc/include
+-
+-# Append hwloc to the external subdirs, so it gets built first
+-external_subdirs += tools/topo/hwloc/hwloc
+-external_dist_subdirs += tools/topo/hwloc/hwloc
+-external_ldflags += -L$(top_builddir)/tools/topo/hwloc/hwloc/src
+-external_libs += -lhwloc_embedded
+-endif
+-- 
+2.7.4
+

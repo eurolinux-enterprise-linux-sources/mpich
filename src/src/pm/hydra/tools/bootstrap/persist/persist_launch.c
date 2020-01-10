@@ -31,15 +31,13 @@ static HYD_status persist_cb(int fd, HYD_event_t events, void *userp)
         HYDU_ASSERT(!closed, status);
 
         if (hdr.io_type == HYDT_PERSIST_STDOUT) {
-            HYDU_sock_write(STDOUT_FILENO, buf, hdr.buflen, &sent, &closed,
-                            HYDU_SOCK_COMM_MSGWAIT);
+            HYDU_sock_write(STDOUT_FILENO, buf, hdr.buflen, &sent, &closed, HYDU_SOCK_COMM_MSGWAIT);
             HYDU_ERR_POP(status, "stdout forwarding error\n");
             HYDU_ASSERT(!closed, status);
             HYDU_ASSERT(sent == hdr.buflen, status);
         }
         else {
-            HYDU_sock_write(STDERR_FILENO, buf, hdr.buflen, &sent, &closed,
-                            HYDU_SOCK_COMM_MSGWAIT);
+            HYDU_sock_write(STDERR_FILENO, buf, hdr.buflen, &sent, &closed, HYDU_SOCK_COMM_MSGWAIT);
             HYDU_ERR_POP(status, "stderr forwarding error\n");
             HYDU_ASSERT(!closed, status);
             HYDU_ASSERT(sent == hdr.buflen, status);
@@ -61,7 +59,7 @@ static HYD_status persist_cb(int fd, HYD_event_t events, void *userp)
 }
 
 HYD_status HYDT_bscd_persist_launch_procs(char **args, struct HYD_proxy *proxy_list,
-                                          int *control_fd)
+                                          int use_rmk, int *control_fd)
 {
     struct HYD_proxy *proxy;
     int idx, i;

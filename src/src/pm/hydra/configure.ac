@@ -18,6 +18,7 @@ AC_ARG_PROGRAM
 dnl must come before LT_INIT, which AC_REQUIREs AC_PROG_CC
 dnl must also come before AC_USE_SYSTEM_EXTENSIONS
 PAC_PROG_CC
+AM_PROG_CC_C_O
 
 # also needed by hwloc in embedded mode, must also come early for expansion
 # ordering reasons
@@ -32,7 +33,7 @@ AS_CASE([$host],
 )
 
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.12.3])
+AM_INIT_AUTOMAKE([-Wall -Wno-portability-recursive -Werror foreign 1.12.3 subdir-objects])
 
 AM_PROG_AR
 
@@ -43,10 +44,21 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Reset link flags
 PAC_RESET_LINK_FLAGS()
-
-AM_PROG_CC_C_O
+WRAPPER_LIBS=""
+export WRAPPER_LIBS
+AC_SUBST(WRAPPER_LIBS)
 
 PAC_ARG_STRICT
+
+# Look for perl.  The absolute path of perl is required in hydra-doxygen.cfg.
+AC_PATH_PROG(PERL,perl)
+
+# In case the documentation targets are used, find doctext and attempt to find
+# the source for the doctext LaTex style files. Use "false" if doctext is not
+# found
+AC_PATH_PROG(DOCTEXT,doctext,false)
+export DOCTEXT
+AC_SUBST(DOCTEXT)
 
 AC_C_CONST
 AC_C_VOLATILE
@@ -81,6 +93,18 @@ fi
 AC_SUBST(HYDRA_VERSION)
 AC_DEFINE_UNQUOTED(HYDRA_VERSION,"$HYDRA_VERSION",[Hydra version information])
 AC_DEFINE_UNQUOTED(HYDRA_RELEASE_DATE,"$HYDRA_RELEASE_DATE",[Hydra release date information])
+
+AC_SUBST(HYDRA_PMI_PROXY)
+PAC_GET_EXENAME("hydra_pmi_proxy", HYDRA_PMI_PROXY)
+AC_DEFINE_UNQUOTED(HYDRA_PMI_PROXY,"$HYDRA_PMI_PROXY",[Hydra PMI proxy executable])
+
+# These substitutions are needed in the Makefile
+AC_SUBST(MPIEXEC_NAME)
+AC_SUBST(MPIEXEC_HYDRA_NAME)
+AC_SUBST(MPIRUN_NAME)
+PAC_GET_EXENAME("mpiexec", MPIEXEC_NAME)
+PAC_GET_EXENAME("mpiexec.hydra", MPIEXEC_HYDRA_NAME)
+PAC_GET_EXENAME("mpirun", MPIRUN_NAME)
 
 PAC_PUSH_ALL_FLAGS
 PAC_RESET_ALL_FLAGS
@@ -134,18 +158,45 @@ AC_SUBST(top_srcdir)
 PAC_ENABLE_COVERAGE
 
 # Check if the necessary headers are available
-AC_CHECK_HEADERS(unistd.h stdlib.h string.h strings.h stdarg.h sys/types.h sys/socket.h \
-		 sched.h sys/stat.h sys/param.h netinet/in.h netinet/tcp.h \
-		 sys/un.h netdb.h sys/time.h time.h ifaddrs.h arpa/inet.h \
-		 errno.h poll.h fcntl.h netdb.h winsock2.h windows.h)
+AC_HEADER_STDC
+AC_CHECK_HEADERS(unistd.h strings.h sys/types.h sys/socket.h sched.h sys/stat.h sys/param.h \
+		 netinet/in.h netinet/tcp.h sys/un.h sys/time.h time.h ifaddrs.h arpa/inet.h \
+		 poll.h fcntl.h netdb.h winsock2.h windows.h)
 
-AC_CHECK_LIB(socket,socket,LDFLAGS="$LDFLAGS -lsocket",)
-AC_CHECK_LIB(nsl,gethostbyname,LDFLAGS="$LDFLAGS -lnsl",)
+# These functions are in additional libraries on some platforms (like Solaris).
+# Check to see if they are needed.
+AC_SEARCH_LIBS(socket,socket,)
+AC_SEARCH_LIBS(gethostbyname,nsl,)
+AC_SEARCH_LIBS(hstrerror, resolv,)
 
 # Check for necessary functions
 AC_CHECK_FUNCS(gettimeofday time strdup sigaction signal usleep alloca unsetenv \
-	       strerror strsignal stat getifaddrs fcntl alarm isatty inet_ntop getpgid \
-	       setsid)
+	       strerror strsignal stat fcntl alarm isatty inet_ntop getpgid \
+	       setsid killpg hstrerror)
+
+if test "$ac_cv_func_hstrerror" = "yes" ; then
+   PAC_FUNC_NEEDS_DECL([#include <netdb.h>],hstrerror)
+fi
+
+if test "$ac_cv_func_gettimeofday" = "yes" ; then
+   PAC_FUNC_NEEDS_DECL([#include <sys/time.h>],gettimeofday)
+fi
+
+if test "$ac_cv_func_getpgid" = "yes" ; then
+   PAC_FUNC_NEEDS_DECL([#include <unistd.h>],getpgid)
+fi
+
+if test "$ac_cv_func_killpg" = "yes" ; then
+   PAC_FUNC_NEEDS_DECL([#include <signal.h>],killpg)
+fi
+
+AC_TRY_LINK([
+	#include <stdio.h>
+	#include <sys/types.h>
+	#include <ifaddrs.h>
+	],
+	[return getifaddrs(NULL);],
+	[AC_DEFINE([HAVE_GETIFADDRS],1,[Define to '1' if getifaddrs is present and usable])])
 
 # Check what we need to do about the environ extern
 AC_CACHE_CHECK([for environ in unistd.h],pac_cv_environ_in_unistd,
@@ -223,10 +274,13 @@ for hydra_bss_name in ${hydra_bss_names}; do
 		hydra_bss_external=true
 		# Check if TM library support is available
 		PAC_SET_HEADER_LIB_PATH(pbs)
+		PAC_PUSH_FLAG(LIBS)
 		PAC_CHECK_HEADER_LIB(tm.h, torque, tm_init, have_pbs_launcher=yes,
 					   have_pbs_launcher=no)
+		PAC_POP_FLAG(LIBS)
                 if test "$have_pbs_launcher" = "yes" ; then
 		    available_launchers="$available_launchers pbs"
+		    PAC_APPEND_FLAG([-ltorque],[WRAPPER_LIBS])
                 fi
 		available_rmks="$available_rmks pbs"
 		;;
@@ -460,11 +514,14 @@ for hydra_ckpointlib in ${hydra_ckpointlibs}; do
     case "$hydra_ckpointlib" in
     	blcr)
 	    PAC_SET_HEADER_LIB_PATH(blcr)
+	    PAC_PUSH_FLAG(LIBS)
 	    PAC_CHECK_HEADER_LIB(libcr.h, cr, cr_init, have_blcr=yes, have_blcr=no)
+	    PAC_POP_FLAG(LIBS)
 	    # BLCR works
 	    if test "$have_blcr" = "yes" ; then
 	       AC_DEFINE(HAVE_BLCR,1,[Define if blcr is available])
 	       available_ckpointlibs="$available_ckpointlibs blcr"
+	       PAC_APPEND_FLAG([-lcr],[WRAPPER_LIBS])
 	    fi
 	    ;;		
 	*)
@@ -488,8 +545,6 @@ AC_DEFINE_UNQUOTED(HYDRA_AVAILABLE_CKPOINTLIBS,"$available_ckpointlibs",
 if test "$hydra_default_ckpointlib" != "" ; then
    AC_DEFINE_UNQUOTED(HYDRA_DEFAULT_CKPOINTLIB,"$hydra_default_ckpointlib",
 		[Default checkpointing library])
-else
-   AC_DEFINE(HYDRA_DEFAULT_CKPOINTLIB,NULL,[Default checkpointing library])
 fi
 AM_CONDITIONAL([hydra_have_blcr], [test "${have_blcr}" = "yes"])
 
@@ -633,12 +688,13 @@ fi
 PAC_PUSH_FLAG([LIBS])
 PAC_PREPEND_FLAG([-lpthread],[LIBS])
 PAC_SET_HEADER_LIB_PATH(ftb)
-PAC_POP_FLAG([LIBS])
 PAC_CHECK_HEADER_LIB(libftb.h, ftb, FTB_Connect, have_ftb=yes, have_ftb=no)
+PAC_POP_FLAG([LIBS])
 if test "$have_ftb" = "yes" ; then
    # FIXME: We need to test to make sure FTB works correctly
    PAC_APPEND_FLAG([-lpthread],[LIBS])
    AC_DEFINE(ENABLE_FTB,1,[Define if FTB is enabled])
+   PAC_APPEND_FLAG([-lftb],[WRAPPER_LIBS])
 fi
 AM_CONDITIONAL([hydra_have_ftb], [test "${have_ftb}" = "yes"])
 

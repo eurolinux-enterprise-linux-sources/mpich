@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4 ; indent-tabs-mode:nil ; -*- */
 /*
- *  (C) 2008 by Argonne National Laboratory.
+ *  (C) 2009 by Argonne National Laboratory.
  *      See COPYRIGHT in top-level directory.
  */
 
@@ -89,7 +89,7 @@ HYD_status HYDU_strsplit(char *str, char **str1, char **str2, char sep)
     HYDU_FUNC_ENTER();
 
     if (str == NULL)
-        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "");
+        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "%s", "");
 
     *str1 = HYDU_strdup(str);
     for (i = 0; (*str1)[i] && ((*str1)[i] != sep); i++);
@@ -233,8 +233,7 @@ char **HYDU_str_to_strlist(char *str)
 
     HYDU_MALLOC(strlist, char **, HYD_NUM_TMP_STRINGS * sizeof(char *), status);
     if (!strlist)
-        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR,
-                            "Unable to allocate mem for strlist\n");
+        HYDU_ERR_SETANDJUMP(status, HYD_INTERNAL_ERROR, "Unable to allocate mem for strlist\n");
 
     for (i = 0; i < HYD_NUM_TMP_STRINGS; i++)
         strlist[i] = NULL;

@@ -6,10 +6,42 @@
 
 #include "mpiimpl.h"
 
+/* style:PMPIuse:PMPI_Get_processor_name:2 sig:0 */
+/* style:PMPIuse:PMPI_Recv:2 sig:0 */
+/* style:PMPIuse:PMPI_Ssend:2 sig:0 */
+/* style: allow:printf:1 sig:0 */
+
 /* For getpid */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+/*
+=== BEGIN_MPI_T_CVAR_INFO_BLOCK ===
+
+cvars:
+    - name        : MPIR_CVAR_PROCTABLE_SIZE
+      category    : DEBUGGER
+      type        : int
+      default     : 64
+      class       : device
+      verbosity   : MPI_T_VERBOSITY_USER_BASIC
+      scope       : MPI_T_SCOPE_ALL_EQ
+      description : >-
+        Size of the "MPIR" debugger interface proctable (process table).
+
+    - name        : MPIR_CVAR_PROCTABLE_PRINT
+      category    : DEBUGGER
+      type        : boolean
+      default     : false
+      class       : device
+      verbosity   : MPI_T_VERBOSITY_USER_BASIC
+      scope       : MPI_T_SCOPE_ALL_EQ
+      description : >-
+        If true, dump the proctable entries at MPIR_WaitForDebugger-time.
+
+=== END_MPI_T_CVAR_INFO_BLOCK ===
+*/
 
 /* There are two versions of the debugger startup:
    1. The debugger starts mpiexec - then mpiexec provides the MPIR_proctable
@@ -170,7 +202,7 @@ void MPIR_WaitForDebugger( void )
        to access this. */
     /* Also, to avoid scaling problems, we only populate the first 64
        entries (default) */
-    maxsize = MPIR_PARAM_PROCTABLE_SIZE;
+    maxsize = MPIR_CVAR_PROCTABLE_SIZE;
     if (maxsize > size) maxsize = size;
 
     if (rank == 0) {
@@ -203,16 +235,14 @@ void MPIR_WaitForDebugger( void )
 	}
 
 	MPIR_proctable_size               = size;
-#if 0
 	/* Debugging hook */
-	if (MPIR_PARAM_PROCTABLE_PRINT) {
+	if (MPIR_CVAR_PROCTABLE_PRINT) {
 	    for (i=0; i<maxsize; i++) {
 		printf( "PT[%d].pid = %d, .host_name = %s\n", 
 			i, MPIR_proctable[i].pid, MPIR_proctable[i].host_name );
 	    }
 	    fflush( stdout );
 	}
-#endif
 	MPIR_Add_finalize( MPIR_FreeProctable, MPIR_proctable, 0 );
     }
     else {
@@ -296,8 +326,6 @@ void MPIR_DebuggerSetAborting( const char *msg )
  * (more specifically, requests created with MPI_Isend, MPI_Issend, or 
  * MPI_Irsend).
  *
- * FIXME: We need to add MPI_Ibsend and the persistent send requests to
- * the known send requests.
  * FIXME: We should exploit this to allow Finalize to report on 
  * send requests that were never completed.
  */
@@ -309,6 +337,7 @@ typedef struct MPIR_Sendq {
     MPID_Request *sreq;
     int tag, rank, context_id;
     struct MPIR_Sendq *next;
+    struct MPIR_Sendq *prev;
 } MPIR_Sendq;
 
 MPIR_Sendq *MPIR_Sendq_head = 0;
@@ -324,7 +353,7 @@ void MPIR_Sendq_remember( MPID_Request *req,
 {
     MPIR_Sendq *p;
 
-    MPIU_THREAD_CS_ENTER(HANDLE,req);
+    MPID_THREAD_CS_ENTER(POBJ, req->pobj_mutex);
     if (pool) {
 	p = pool;
 	pool = p->next;
@@ -333,6 +362,7 @@ void MPIR_Sendq_remember( MPID_Request *req,
 	p = (MPIR_Sendq *)MPIU_Malloc( sizeof(MPIR_Sendq) );
 	if (!p) {
 	    /* Just ignore it */
+            req->dbg_next = NULL;
             goto fn_exit;
 	}
     }
@@ -341,33 +371,33 @@ void MPIR_Sendq_remember( MPID_Request *req,
     p->rank       = rank;
     p->context_id = context_id;
     p->next       = MPIR_Sendq_head;
+    p->prev       = NULL;
     MPIR_Sendq_head = p;
+    if (p->next) p->next->prev = p;
+    req->dbg_next = p;
 fn_exit:
-    MPIU_THREAD_CS_EXIT(HANDLE,req);
+    MPID_THREAD_CS_EXIT(POBJ, req->pobj_mutex);
 }
 
 void MPIR_Sendq_forget( MPID_Request *req )
 {
     MPIR_Sendq *p, *prev;
 
-    MPIU_THREAD_CS_ENTER(HANDLE,req);
-    p    = MPIR_Sendq_head;
-    prev = 0;
-
-    while (p) {
-	if (p->sreq == req) {
-	    if (prev) prev->next = p->next;
-	    else MPIR_Sendq_head = p->next;
-	    /* Return this element to the pool */
-	    p->next = pool;
-	    pool    = p;
-	    break;
-	}
-	prev = p;
-	p    = p->next;
+    MPID_THREAD_CS_ENTER(POBJ, req->pobj_mutex);
+    p    = req->dbg_next;
+    if (!p) {
+        /* Just ignore it */
+        MPID_THREAD_CS_EXIT(POBJ, req->pobj_mutex);
+        return;
     }
-    /* If we don't find the request, just ignore it */
-    MPIU_THREAD_CS_EXIT(HANDLE,req);
+    prev = p->prev;
+    if (prev != NULL) prev->next = p->next;
+    else MPIR_Sendq_head = p->next;
+    if (p->next != NULL) p->next->prev = prev;
+    /* Return this element to the pool */
+    p->next = pool;
+    pool    = p;
+    MPID_THREAD_CS_EXIT(POBJ, req->pobj_mutex);
 }
 
 static int SendqFreePool( void *d )
@@ -426,9 +456,9 @@ void MPIR_CommL_remember( MPID_Comm *comm_ptr )
 		   "Adding communicator %p to remember list",comm_ptr);
     MPIU_DBG_MSG_P(COMM,VERBOSE,
 		   "Remember list structure address is %p",&MPIR_All_communicators);
-    MPIU_THREAD_CS_ENTER(HANDLE,comm_ptr);
+    MPID_THREAD_CS_ENTER(POBJ, MPIR_THREAD_POBJ_COMM_MUTEX(comm_ptr));
     if (comm_ptr == MPIR_All_communicators.head) {
-	MPIU_Internal_error_printf( "Internal error: communicator is already on free list\n" );
+	MPL_internal_error_printf( "Internal error: communicator is already on free list\n" );
 	return;
     }
     comm_ptr->comm_next = MPIR_All_communicators.head;
@@ -437,7 +467,7 @@ void MPIR_CommL_remember( MPID_Comm *comm_ptr )
     MPIU_DBG_MSG_P(COMM,VERBOSE,
 		   "master head is %p", MPIR_All_communicators.head );
 
-    MPIU_THREAD_CS_EXIT(HANDLE,comm_ptr);
+    MPID_THREAD_CS_EXIT(POBJ, MPIR_THREAD_POBJ_COMM_MUTEX(comm_ptr));
 }
 
 void MPIR_CommL_forget( MPID_Comm *comm_ptr )
@@ -446,7 +476,7 @@ void MPIR_CommL_forget( MPID_Comm *comm_ptr )
 
     MPIU_DBG_MSG_P(COMM,VERBOSE,
 		   "Forgetting communicator %p from remember list",comm_ptr);
-    MPIU_THREAD_CS_ENTER(HANDLE,comm_ptr);
+    MPID_THREAD_CS_ENTER(POBJ, MPIR_THREAD_POBJ_COMM_MUTEX(comm_ptr));
     p = MPIR_All_communicators.head;
     prev = 0;
     while (p) {
@@ -456,7 +486,7 @@ void MPIR_CommL_forget( MPID_Comm *comm_ptr )
 	    break;
 	}
 	if (p == p->comm_next) {
-	    MPIU_Internal_error_printf( "Mangled pointers to communicators - next is itself for %p\n", p );
+	    MPL_internal_error_printf( "Mangled pointers to communicators - next is itself for %p\n", p );
 	    break;
 	}
 	prev = p;
@@ -464,7 +494,7 @@ void MPIR_CommL_forget( MPID_Comm *comm_ptr )
     }
     /* Record a change to the list */
     MPIR_All_communicators.sequence_number++;
-    MPIU_THREAD_CS_EXIT(HANDLE,comm_ptr);
+    MPID_THREAD_CS_EXIT(POBJ, MPIR_THREAD_POBJ_COMM_MUTEX(comm_ptr));
 }
 
 #ifdef MPIU_PROCTABLE_NEEDED

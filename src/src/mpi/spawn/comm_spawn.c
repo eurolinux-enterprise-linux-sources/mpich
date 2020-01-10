@@ -13,6 +13,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_spawn  MPI_Comm_spawn
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_spawn as PMPI_Comm_spawn
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_spawn(const char *command, char *argv[], int maxprocs, MPI_Info info, int root,
+                   MPI_Comm comm, MPI_Comm *intercomm, int array_of_errcodes[]) __attribute__((weak,alias("PMPI_Comm_spawn")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -69,7 +72,7 @@ int MPI_Comm_spawn(const char *command, char *argv[], int maxprocs, MPI_Info inf
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_SPAWN);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -92,7 +95,7 @@ int MPI_Comm_spawn(const char *command, char *argv[], int maxprocs, MPI_Info inf
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
 	    /* If comm_ptr is not valid, it will be reset to null */
             if (mpi_errno) goto fn_fail;
 
@@ -124,13 +127,13 @@ int MPI_Comm_spawn(const char *command, char *argv[], int maxprocs, MPI_Info inf
                                          array_of_errcodes); 
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
-    MPIU_OBJ_PUBLISH_HANDLE(*intercomm, intercomm_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*intercomm, intercomm_ptr->handle);
 
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_SPAWN);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

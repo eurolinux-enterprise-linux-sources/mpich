@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Bsend_init  MPI_Bsend_init
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Bsend_init as PMPI_Bsend_init
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Bsend_init(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+                   MPI_Comm comm, MPI_Request *request) __attribute__((weak,alias("PMPI_Bsend_init")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -67,7 +70,7 @@ int MPI_Bsend_init(const void *buf, int count, MPI_Datatype datatype,
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER(MPID_STATE_MPI_BSEND_INIT);
     
     /* Validate handle parameters needing to be converted */
@@ -89,7 +92,7 @@ int MPI_Bsend_init(const void *buf, int count, MPI_Datatype datatype,
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 	    
 	    MPIR_ERRTEST_COUNT(count, mpi_errno);
@@ -119,15 +122,16 @@ int MPI_Bsend_init(const void *buf, int count, MPI_Datatype datatype,
     mpi_errno = MPID_Bsend_init(buf, count, datatype, dest, tag, comm_ptr,
 				MPID_CONTEXT_INTRA_PT2PT, &request_ptr);
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
+    MPIR_SENDQ_REMEMBER(request_ptr, dest, tag, comm_ptr->context_id);
 
     /* return the handle of the request to the user */
-    MPIU_OBJ_PUBLISH_HANDLE(*request, request_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*request, request_ptr->handle);
 
     /* ... end of body of routine ... */
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT(MPID_STATE_MPI_BSEND_INIT);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

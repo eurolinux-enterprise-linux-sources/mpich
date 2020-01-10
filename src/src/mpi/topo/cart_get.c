@@ -15,6 +15,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Cart_get  MPI_Cart_get
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Cart_get as PMPI_Cart_get
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Cart_get(MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]) __attribute__((weak,alias("PMPI_Cart_get")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -90,7 +92,7 @@ int MPI_Cart_get(MPI_Comm comm, int maxdims, int dims[], int periods[],
         MPID_BEGIN_ERROR_CHECKS;
         {
             /* Validate comm_ptr */
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, TRUE );
 	    /* If comm_ptr is not valid, it will be reset to null */
             if (mpi_errno) goto fn_fail;
         }
@@ -106,8 +108,8 @@ int MPI_Cart_get(MPI_Comm comm, int maxdims, int dims[], int periods[],
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
-	    MPIU_ERR_CHKANDJUMP((!cart_ptr || cart_ptr->kind != MPI_CART), mpi_errno, MPI_ERR_TOPOLOGY, "**notcarttopo");
-	    MPIU_ERR_CHKANDJUMP2((cart_ptr->topo.cart.ndims > maxdims), mpi_errno, MPI_ERR_ARG, "**dimsmany",
+	    MPIR_ERR_CHKANDJUMP((!cart_ptr || cart_ptr->kind != MPI_CART), mpi_errno, MPI_ERR_TOPOLOGY, "**notcarttopo");
+	    MPIR_ERR_CHKANDJUMP2((cart_ptr->topo.cart.ndims > maxdims), mpi_errno, MPI_ERR_ARG, "**dimsmany",
 			 "**dimsmany %d %d", cart_ptr->topo.cart.ndims, maxdims);
 
 	    if (cart_ptr->topo.cart.ndims) {

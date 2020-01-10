@@ -13,6 +13,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Comm_idup  MPI_Comm_idup
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Comm_idup as PMPI_Comm_idup
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Comm_idup(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request) __attribute__((weak,alias("PMPI_Comm_idup")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -27,7 +29,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIR_Comm_idup_impl
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int MPIR_Comm_idup_impl(MPID_Comm *comm_ptr, MPID_Comm **newcommp, MPID_Request **reqp)
 {
     int mpi_errno = MPI_SUCCESS;
@@ -43,11 +45,11 @@ int MPIR_Comm_idup_impl(MPID_Comm *comm_ptr, MPID_Comm **newcommp, MPID_Request 
         mpi_errno = MPIR_Process.attr_dup(comm_ptr->handle,
                                           comm_ptr->attributes,
                                           &new_attributes);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     }
 
     mpi_errno = MPIR_Comm_copy_data(comm_ptr, newcommp);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     (*newcommp)->attributes = new_attributes;
 
@@ -55,11 +57,11 @@ int MPIR_Comm_idup_impl(MPID_Comm *comm_ptr, MPID_Comm **newcommp, MPID_Request 
      * allocating a context ID to use for actual communication */
     if (comm_ptr->comm_kind == MPID_INTERCOMM) {
         mpi_errno = MPIR_Get_intercomm_contextid_nonblock(comm_ptr, *newcommp, reqp);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     }
     else {
         mpi_errno = MPIR_Get_contextid_nonblock(comm_ptr, *newcommp, reqp);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     }
 
 fn_exit:
@@ -73,7 +75,7 @@ fn_fail:
 #undef FUNCNAME
 #define FUNCNAME MPI_Comm_idup
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 /*@
 MPI_Comm_idup - nonblocking communicator duplication
 
@@ -98,7 +100,7 @@ int MPI_Comm_idup(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request)
     MPID_Request *dreq = NULL;
     MPID_MPI_STATE_DECL(MPID_STATE_MPI_COMM_IDUP);
 
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_COMM_IDUP);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -121,7 +123,7 @@ int MPI_Comm_idup(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request)
     {
         MPID_BEGIN_ERROR_CHECKS
         {
-            MPID_Comm_valid_ptr(comm_ptr, mpi_errno);
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno != MPI_SUCCESS) goto fn_fail;
             MPIR_ERRTEST_ARGNULL(request, "request", mpi_errno);
             /* TODO more checks may be appropriate (counts, in_place, buffer aliasing, etc) */
@@ -136,19 +138,19 @@ int MPI_Comm_idup(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request)
     *newcomm = MPI_COMM_NULL;
 
     mpi_errno = MPIR_Comm_idup_impl(comm_ptr, &newcomm_ptr, &dreq);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* NOTE: this is a publication for most of the comm, but the context ID
      * won't be valid yet, so we must "republish" relative to the request
      * handle at request completion time. */
-    MPIU_OBJ_PUBLISH_HANDLE(*newcomm, newcomm_ptr->handle);
+    MPID_OBJ_PUBLISH_HANDLE(*newcomm, newcomm_ptr->handle);
     *request = dreq->handle;
 
     /* ... end of body of routine ... */
 
 fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_COMM_IDUP);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
 fn_fail:

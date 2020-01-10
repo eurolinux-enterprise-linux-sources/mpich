@@ -19,6 +19,7 @@ Output Parameters:
   Return Value:
   0 on success, -1 on failure.
 @*/
+
 int MPID_Type_commit(MPI_Datatype *datatype_p)
 {
     int           mpi_errno=MPI_SUCCESS;
@@ -29,7 +30,7 @@ int MPID_Type_commit(MPI_Datatype *datatype_p)
     MPID_Datatype_get_ptr(*datatype_p, datatype_ptr);
 
     if (datatype_ptr->is_committed == 0) {
-	datatype_ptr->is_committed = 1;
+       datatype_ptr->is_committed = 1;
 
 #ifdef MPID_NEEDS_DLOOP_ALL_BYTES
         /* If MPID implementation needs use to reduce everything to
@@ -60,8 +61,12 @@ int MPID_Type_commit(MPI_Datatype *datatype_p)
 #if 0
         MPIDI_Dataloop_dot_printf(datatype_ptr->dataloop, 0, 1);
 #endif
-    }
 
+#ifdef MPID_Dev_datatype_commit_hook
+       MPID_Dev_datatype_commit_hook(datatype_p);
+#endif /* MPID_Dev_datatype_commit_hook */
+
+    }
     return mpi_errno;
 }
 

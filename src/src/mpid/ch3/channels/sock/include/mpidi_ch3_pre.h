@@ -18,7 +18,6 @@
 
 /* FIXME: These should be removed */
 #define MPIDI_DEV_IMPLEMENTS_KVS
-#define MPIDI_DEV_IMPLEMENTS_ABORT
 
 /* FIXME: Are the following packet extensions?  Can the socket connect/accept
    packets be made part of the util/sock support? */
@@ -27,6 +26,10 @@ MPIDI_CH3I_PKT_SC_OPEN_REQ,			\
 MPIDI_CH3I_PKT_SC_CONN_ACCEPT,		        \
 MPIDI_CH3I_PKT_SC_OPEN_RESP,			\
 MPIDI_CH3I_PKT_SC_CLOSE
+
+typedef struct {
+    int dummy;  /* dummy variable to ensure we don't have an empty structure */
+} MPIDI_CH3I_CH_comm_t;
 
 /* This channel has no special channel data for the process group structure */
 
@@ -75,8 +78,7 @@ MPIDI_CH3I_Progress_state;
    and must be available to the routines in src/mpi */
 extern volatile unsigned int MPIDI_CH3I_progress_completion_count;
 
-
-/* MPICH_IS_THREADED isn't defined yet (handled by mpiimplthread.h) */
+/* MPICH_IS_THREADED isn't defined yet */
 #if (MPICH_THREAD_LEVEL == MPI_THREAD_MULTIPLE)
 #define MPIDI_CH3I_PROGRESS_WAKEUP                                                                \
     do {                                                                                          \

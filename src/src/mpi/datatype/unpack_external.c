@@ -14,6 +14,10 @@
 #pragma _HP_SECONDARY_DEF PMPI_Unpack_external  MPI_Unpack_external
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Unpack_external as PMPI_Unpack_external
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Unpack_external(const char datarep[], const void *inbuf, MPI_Aint insize,
+                        MPI_Aint *position, void *outbuf, int outcount, MPI_Datatype datatype)
+                        __attribute__((weak,alias("PMPI_Unpack_external")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -107,7 +111,7 @@ int MPI_Unpack_external(const char datarep[],
     }
 
     segp = MPID_Segment_alloc();
-    MPIU_ERR_CHKANDJUMP1((segp == NULL), mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "MPID_Segment_alloc");
+    MPIR_ERR_CHKANDJUMP1((segp == NULL), mpi_errno, MPI_ERR_OTHER, "**nomem", "**nomem %s", "MPID_Segment_alloc");
     mpi_errno = MPID_Segment_init(outbuf, outcount, datatype, segp, 1);
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
 
@@ -118,7 +122,7 @@ int MPI_Unpack_external(const char datarep[],
     last  = SEGMENT_IGNORE_LAST;
 
     /* Ensure that pointer increment fits in a pointer */
-    MPID_Ensure_Aint_fits_in_pointer((MPI_VOID_PTR_CAST_TO_MPI_AINT inbuf) + *position);
+    MPIU_Ensure_Aint_fits_in_pointer((MPIU_VOID_PTR_CAST_TO_MPI_AINT inbuf) + *position);
 
     MPID_Segment_unpack_external32(segp,
 				   first,

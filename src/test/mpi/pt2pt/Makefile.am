@@ -22,7 +22,10 @@ noinst_PROGRAMS =  \
     bsend5         \
     bsendalign     \
     cancelrecv     \
+    cancelanysrc   \
     isendself      \
+    issendselfcancel \
+    isendirecv     \
     sendself       \
     eagerdt        \
     isendselfprobe \
@@ -36,6 +39,7 @@ noinst_PROGRAMS =  \
     scancel2       \
     rcancel        \
     pscancel       \
+    scancel_unmatch\
     sendflood      \
     sendrecv1      \
     sendrecv2      \
@@ -48,5 +52,6 @@ noinst_PROGRAMS =  \
     waittestnull   \
     sendall        \
     large_message  \
-    mprobe
+    mprobe         \
+    big_count_status
 

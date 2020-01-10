@@ -14,6 +14,9 @@
 #pragma _HP_SECONDARY_DEF PMPI_Issend  MPI_Issend
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Issend as PMPI_Issend
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Issend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+               MPI_Comm comm, MPI_Request *request) __attribute__((weak,alias("PMPI_Issend")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -66,7 +69,7 @@ int MPI_Issend(const void *buf, int count, MPI_Datatype datatype, int dest, int 
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_PT2PT_FUNC_ENTER_FRONT(MPID_STATE_MPI_ISSEND);
 
     /* Validate handle parameters needing to be converted */
@@ -88,7 +91,7 @@ int MPI_Issend(const void *buf, int count, MPI_Datatype datatype, int dest, int 
     {
         MPID_BEGIN_ERROR_CHECKS;
         {
-            MPID_Comm_valid_ptr( comm_ptr, mpi_errno );
+            MPID_Comm_valid_ptr( comm_ptr, mpi_errno, FALSE );
             if (mpi_errno) goto fn_fail;
 	    
 	    MPIR_ERRTEST_COUNT(count, mpi_errno);
@@ -135,7 +138,7 @@ int MPI_Issend(const void *buf, int count, MPI_Datatype datatype, int dest, int 
     
   fn_exit:
     MPID_MPI_PT2PT_FUNC_EXIT(MPID_STATE_MPI_ISSEND);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

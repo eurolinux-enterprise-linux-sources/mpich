@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include <strings.h>
 
 #include <mpi.h>
-#include <mpitypedefs.h>
 #include "muteximpl.h"
 
 
@@ -21,6 +21,8 @@
 #pragma _HP_SECONDARY_DEF PMPIX_Mutex_create  MPIX_Mutex_create
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPIX_Mutex_create as PMPIX_Mutex_create
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPIX_Mutex_create(int my_count, MPI_Comm comm, MPIX_Mutex * hdl_out) __attribute__((weak,alias("PMPIX_Mutex_create")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -34,7 +36,7 @@
 #undef FUNCNAME
 #define FUNCNAME MPIX_Mutex_create
 #undef FCNAME
-#define FCNAME MPIU_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 
 /** Create a group of MPI mutexes.  Collective on the given communicator.
   *
@@ -83,7 +85,7 @@ int MPIX_Mutex_create(int my_count, MPI_Comm comm, MPIX_Mutex * hdl_out)
         if (i < my_count) {
             MPI_Alloc_mem(nproc, MPI_INFO_NULL, &hdl->bases[i]);
             assert(hdl->bases[i] != NULL);
-            bzero(hdl->bases[i], nproc);
+            memset(hdl->bases[i], 0, nproc);
 
             base = hdl->bases[i];
             size = nproc;

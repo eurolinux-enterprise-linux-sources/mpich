@@ -14,6 +14,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Win_test  MPI_Win_test
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Win_test as PMPI_Win_test
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Win_test(MPI_Win win, int *flag) __attribute__((weak,alias("PMPI_Win_test")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -61,7 +63,7 @@ int MPI_Win_test(MPI_Win win, int *flag)
 
     MPIR_ERRTEST_INITIALIZED_ORDIE();
     
-    MPIU_THREAD_CS_ENTER(ALLFUNC,);
+    MPID_THREAD_CS_ENTER(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     MPID_MPI_FUNC_ENTER(MPID_STATE_MPI_WIN_TEST);
 
     /* Validate parameters, especially handles needing to be converted */
@@ -96,14 +98,14 @@ int MPI_Win_test(MPI_Win win, int *flag)
 
     /* ... body of routine ...  */
     
-    mpi_errno = MPIU_RMA_CALL(win_ptr,Win_test(win_ptr, flag));
+    mpi_errno = MPID_Win_test(win_ptr, flag);
     if (mpi_errno != MPI_SUCCESS) goto fn_fail;
  
     /* ... end of body of routine ... */
 
   fn_exit:
     MPID_MPI_FUNC_EXIT(MPID_STATE_MPI_WIN_TEST);
-    MPIU_THREAD_CS_EXIT(ALLFUNC,);
+    MPID_THREAD_CS_EXIT(GLOBAL, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
     return mpi_errno;
 
   fn_fail:

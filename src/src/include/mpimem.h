@@ -24,9 +24,6 @@ extern "C" {
 #include "mpichconf.h"
 #include "mpl.h"
 
-/* ensure that we weren't included out of order */
-#include "mpibase.h"
-
 /* Define attribute as empty if it has no definition */
 #ifndef ATTRIBUTE
 #define ATTRIBUTE(a)
@@ -91,11 +88,6 @@ char *MPIU_Strdup( const char * );
 #define MPIU_STR_FAIL      -1
 #define MPIU_STR_NOMEM      1
 
-/* FIXME: TRUE/FALSE definitions should either not be used or be
-   used consistently.  These also do not belong in the mpimem header file. */
-#define MPIU_TRUE  1
-#define MPIU_FALSE 0
-
 /* FIXME: Global types like this need to be discussed and agreed to */
 typedef int MPIU_BOOL;
 
@@ -145,7 +137,7 @@ void MPIU_trinit(int);
 void *MPIU_trmalloc(size_t, int, const char []);
 void MPIU_trfree(void *, int, const char []);
 int MPIU_trvalid(const char []);
-void MPIU_trspace(int *, int *);
+void MPIU_trspace(size_t *, size_t *);
 void MPIU_trid(int);
 void MPIU_trlevel(int);
 void MPIU_trDebugLevel(int);
@@ -282,15 +274,12 @@ extern char *strdup( const char * );
 
 /* Memory allocation macros. See document. */
 
-/* You can redefine this to indicate whether memory allocation errors
-   are fatal.  Recoverable by default */
-#define MPIU_CHKMEM_ISFATAL MPIR_ERR_RECOVERABLE
-
-/* Standard macro for generating error codes.   */
+/* Standard macro for generating error codes.  We set the error to be
+ * recoverable by default, but this can be changed. */
 #ifdef HAVE_ERROR_CHECKING
 #define MPIU_CHKMEM_SETERR(rc_,nbytes_,name_) \
      rc_=MPIR_Err_create_code( MPI_SUCCESS, \
-          MPIU_CHKMEM_ISFATAL, FCNAME, __LINE__, \
+          MPIR_ERR_RECOVERABLE, FCNAME, __LINE__, \
           MPI_ERR_OTHER, "**nomem2", "**nomem2 %d %s", nbytes_, name_ )
 #else
 #define MPIU_CHKMEM_SETERR(rc_,nbytes_,name_) rc_=MPI_ERR_OTHER
@@ -317,7 +306,7 @@ extern char *strdup( const char * );
 }}
 #else
 #define MPIU_CHKLMEM_DECL(n_) \
- void *(mpiu_chklmem_stk_[n_]) = {0};\
+ void *(mpiu_chklmem_stk_[n_]); \
  int mpiu_chklmem_stk_sp_=0;\
  MPIU_AssertDeclValue(const int mpiu_chklmem_stk_sz_,n_)
 
@@ -368,7 +357,7 @@ if (pointer_) { \
 
 /* Persistent memory that we may want to recover if something goes wrong */
 #define MPIU_CHKPMEM_DECL(n_) \
- void *(mpiu_chkpmem_stk_[n_]);\
+ void *(mpiu_chkpmem_stk_[n_]) = { NULL };     \
  int mpiu_chkpmem_stk_sp_=0;\
  MPIU_AssertDeclValue(const int mpiu_chkpmem_stk_sz_,n_)
 #define MPIU_CHKPMEM_MALLOC_ORSTMT(pointer_,type_,nbytes_,rc_,name_,stmt_) \
@@ -426,7 +415,7 @@ if (pointer_) { \
     void *realloc_tmp_ = MPIU_Realloc((ptr_), (size_)); \
     if ((size_) && !realloc_tmp_) { \
         MPIU_Free(ptr_); \
-        MPIU_ERR_SETANDJUMP2(rc_,MPIU_CHKMEM_ISFATAL,"**nomem2","**nomem2 %d %s",(size_),MPIU_QUOTE(ptr_)); \
+        MPIR_ERR_SETANDJUMP2(rc_,MPI_ERR_OTHER,"**nomem2","**nomem2 %d %s",(size_),MPL_QUOTE(ptr_)); \
     } \
     (ptr_) = realloc_tmp_; \
 } while (0)
@@ -434,7 +423,7 @@ if (pointer_) { \
 #define MPIU_REALLOC_ORJUMP(ptr_,size_,rc_) do { \
     void *realloc_tmp_ = MPIU_Realloc((ptr_), (size_)); \
     if (size_) \
-        MPIU_ERR_CHKANDJUMP2(!realloc_tmp_,rc_,MPIU_CHKMEM_ISFATAL,"**nomem2","**nomem2 %d %s",(size_),MPIU_QUOTE(ptr_)); \
+        MPIR_ERR_CHKANDJUMP2(!realloc_tmp_,rc_,MPI_ERR_OTHER,"**nomem2","**nomem2 %d %s",(size_),MPL_QUOTE(ptr_)); \
     (ptr_) = realloc_tmp_; \
 } while (0)
 
@@ -446,8 +435,6 @@ if (pointer_) { \
 /* FIXME: Provide a fallback function ? */
 #   error "No function defined for case-insensitive strncmp"
 #endif
-
-#define MPIU_Snprintf MPL_snprintf
 
 /* MPIU_Basename(path, basename)
    This function finds the basename in a path (ala "man 1 basename").
@@ -462,13 +449,6 @@ void MPIU_Basename(char *path, char **basename);
     ( ((char *)(a_) >= (char *)(b_) && ((char *)(a_) < ((char *)(b_) + (b_len_)))) ||  \
       ((char *)(b_) >= (char *)(a_) && ((char *)(b_) < ((char *)(a_) + (a_len_)))) )
 #if (!defined(NDEBUG) && defined(HAVE_ERROR_CHECKING))
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
 
 /* May be used to perform sanity and range checking on memcpy and mempcy-like
    function calls.  This macro will bail out much like an MPIU_Assert if any of

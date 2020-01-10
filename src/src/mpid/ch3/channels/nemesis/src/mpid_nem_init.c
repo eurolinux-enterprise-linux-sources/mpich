@@ -4,11 +4,50 @@
  *      See COPYRIGHT in top-level directory.
  */
 
-#include "mpid_nem_pre.h"
+#include "mpiimpl.h"
 #include "mpid_nem_impl.h"
 #include "mpid_nem_nets.h"
 #include <errno.h>
 #include "mpidi_nem_statistics.h"
+#include "mpit.h"
+
+/*
+=== BEGIN_MPI_T_CVAR_INFO_BLOCK ===
+
+categories:
+    - name        : NEMESIS
+      description : cvars that control behavior of the ch3:nemesis channel
+
+cvars:
+    - name        : MPIR_CVAR_NEMESIS_SHM_EAGER_MAX_SZ
+      category    : NEMESIS
+      type        : int
+      default     : -1
+      class       : none
+      verbosity   : MPI_T_VERBOSITY_USER_BASIC
+      scope       : MPI_T_SCOPE_ALL_EQ
+      description : >-
+        This cvar controls the message size at which Nemesis
+        switches from eager to rendezvous mode for shared memory.
+        If this cvar is set to -1, then Nemesis will choose
+        an appropriate value.
+
+    - name        : MPIR_CVAR_NEMESIS_SHM_READY_EAGER_MAX_SZ
+      category    : NEMESIS
+      type        : int
+      default     : -2
+      class       : none
+      verbosity   : MPI_T_VERBOSITY_USER_BASIC
+      scope       : MPI_T_SCOPE_ALL_EQ
+      description : >-
+        This cvar controls the message size at which Nemesis
+        switches from eager to rendezvous mode for ready-send
+        messages.  If this cvar is set to -1, then ready messages
+        will always be sent eagerly.  If this cvar is set to -2,
+        then Nemesis will choose an appropriate value.
+
+=== END_MPI_T_CVAR_INFO_BLOCK ===
+*/
 
 /* constants for configure time selection of local LMT implementations */
 #define MPID_NEM_LOCAL_LMT_NONE 0
@@ -38,50 +77,44 @@ static int get_local_procs(MPIDI_PG_t *pg, int our_pg_rank, int *num_local_p,
 char *MPID_nem_asymm_base_addr = 0;
 
 /* used by mpid_nem_inline.h and mpid_nem_finalize.c */
-uint64_t *MPID_nem_fbox_fall_back_to_queue_count = NULL;
-
-#if ENABLE_NEM_STATISTICS
-/* MPIT support */
-MPIR_T_SIMPLE_HANDLE_CREATOR(fbox_count_creator, uint64_t, MPID_nem_mem_region.num_local)
+unsigned long long *MPID_nem_fbox_fall_back_to_queue_count = NULL;
 
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_init_stats
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 static int MPID_nem_init_stats(int n_local_ranks)
 {
     int mpi_errno = MPI_SUCCESS;
-    int idx = -1;
 
-    MPID_nem_fbox_fall_back_to_queue_count = MPIU_Calloc(n_local_ranks, sizeof(uint64_t));
+    if (ENABLE_PVAR_NEM) {
+        MPID_nem_fbox_fall_back_to_queue_count = MPIU_Calloc(n_local_ranks, sizeof(unsigned long long));
+    }
 
-    mpi_errno = MPIR_T_pvar_add("nem_fbox_fall_back_to_queue_count",
-                                MPI_T_VERBOSITY_USER_DETAIL,
-                                MPI_T_PVAR_CLASS_COUNTER,
-                                MPI_AINT,
-                                MPI_T_ENUM_NULL,
-                                "array counting how many times nemesis had to fall back to "
-                                "the regular queue when sending messages between pairs of "
-                                "local processes",
-                                MPI_T_BIND_NO_OBJECT,
-                                /*readonly=*/ FALSE,
-                                /*continuous=*/ TRUE,
-                                /*atomic=*/ FALSE,
-                                MPIR_T_PVAR_IMPL_SIMPLE,
-                                /*var_state=*/ MPID_nem_fbox_fall_back_to_queue_count,
-                                &fbox_count_creator,
-                                &idx);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    MPIR_T_PVAR_COUNTER_REGISTER_DYNAMIC(
+        NEM,
+        MPI_UNSIGNED_LONG_LONG,
+        nem_fbox_fall_back_to_queue_count, /* name */
+        MPID_nem_fbox_fall_back_to_queue_count, /* address */
+        n_local_ranks, /* count, known at pvar registeration time */
+        MPI_T_VERBOSITY_USER_DETAIL,
+        MPI_T_BIND_NO_OBJECT,
+        MPIR_T_PVAR_FLAG_CONTINUOUS, /* flags */
+        NULL, /* get_value */
+        NULL, /* get_count */
+        "NEMESIS", /* category */
+        "Array counting how many times nemesis had to fall back to the regular queue when sending messages between pairs of local processes");
 
-fn_fail:
+fn_exit:
     return mpi_errno;
+fn_fail:
+    goto fn_exit;
 }
-#endif  /* ENABLE_NEM_STATISTICS */
 
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_init
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int
 MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
 {
@@ -122,20 +155,20 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
     MPIU_Assert(MPID_NEM_CELL_PAYLOAD_LEN + MPID_NEM_CELL_HEAD_LEN == sizeof(MPID_nem_cell_t));
     MPIU_Assert(sizeof(MPID_nem_cell_t) == sizeof(MPID_nem_abs_cell_t));
     /* Make sure payload is aligned on a double */
-    MPIU_Assert(MPID_NEM_ALIGNED(&((MPID_nem_cell_t*)0)->pkt.mpich.payload[0], sizeof(double)));
+    MPIU_Assert(MPID_NEM_ALIGNED(&((MPID_nem_cell_t*)0)->pkt.mpich.p.payload[0], sizeof(double)));
 
     /* Initialize the business card */
     mpi_errno = MPIDI_CH3I_BCInit( &bc_val, &val_max_remaining );
-    if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP (mpi_errno);
     publish_bc_orig = bc_val;
 
     ret = gethostname (MPID_nem_hostname, MAX_HOSTNAME_LEN);
-    MPIU_ERR_CHKANDJUMP2 (ret == -1, mpi_errno, MPI_ERR_OTHER, "**sock_gethost", "**sock_gethost %s %d", MPIU_Strerror (errno), errno);
+    MPIR_ERR_CHKANDJUMP2 (ret == -1, mpi_errno, MPI_ERR_OTHER, "**sock_gethost", "**sock_gethost %s %d", MPIU_Strerror (errno), errno);
 
     MPID_nem_hostname[MAX_HOSTNAME_LEN-1] = '\0';
 
     mpi_errno = get_local_procs(pg_p, pg_rank, &num_local, &local_procs, &local_rank);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 #ifdef MEM_REGION_IN_HEAP
     MPIU_CHKPMEM_MALLOC (MPID_nem_mem_region_ptr, MPID_nem_mem_region_t *, sizeof(MPID_nem_mem_region_t), mpi_errno, "mem_region");
@@ -150,7 +183,8 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
     MPID_nem_mem_region.local_rank     = local_rank;
     MPIU_CHKPMEM_MALLOC (MPID_nem_mem_region.local_ranks, int *, num_procs * sizeof(int), mpi_errno, "mem_region local ranks");
     MPID_nem_mem_region.ext_procs      = num_procs - num_local ;
-    MPIU_CHKPMEM_MALLOC (MPID_nem_mem_region.ext_ranks, int *, MPID_nem_mem_region.ext_procs * sizeof(int), mpi_errno, "mem_region ext ranks");
+    if (MPID_nem_mem_region.ext_procs > 0)
+        MPIU_CHKPMEM_MALLOC (MPID_nem_mem_region.ext_ranks, int *, MPID_nem_mem_region.ext_procs * sizeof(int), mpi_errno, "mem_region ext ranks");
     MPID_nem_mem_region.next           = NULL;
 
     for (idx = 0 ; idx < num_procs; idx++)
@@ -185,7 +219,7 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
 	char *base_addr;
 
         mpi_errno = MPIU_SHMW_Hnd_init(&handle);
-        if(mpi_errno != MPI_SUCCESS) { MPIU_ERR_POP(mpi_errno); }
+        if(mpi_errno != MPI_SUCCESS) { MPIR_ERR_POP(mpi_errno); }
 
         mpi_errno = MPIU_SHMW_Seg_create_and_attach(handle, size, &base_addr, 0);
         /* --BEGIN ERROR HANDLING-- */
@@ -193,7 +227,7 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
         {
             MPIU_SHMW_Seg_remove(handle);
             MPIU_SHMW_Hnd_finalize(&handle);
-            MPIU_ERR_POP (mpi_errno);
+            MPIR_ERR_POP (mpi_errno);
         }
         /* --END ERROR HANDLING-- */
 
@@ -202,7 +236,7 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
         if (mpi_errno)
         {
             MPIU_SHMW_Hnd_finalize(&handle);
-            MPIU_ERR_POP (mpi_errno);
+            MPIR_ERR_POP (mpi_errno);
         }
         /* --END ERROR HANDLING-- */
 
@@ -214,36 +248,36 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
     /* Request fastboxes region */
     mpi_errno = MPIDI_CH3I_Seg_alloc(MAX((num_local*((num_local-1)*sizeof(MPID_nem_fastbox_t))), MPID_NEM_ASYMM_NULL_VAL),
                                      (void **)&fastboxes_p);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     
     /* Request data cells region */
     mpi_errno = MPIDI_CH3I_Seg_alloc(num_local * MPID_NEM_NUM_CELLS * sizeof(MPID_nem_cell_t), (void **)&cells_p);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* Request free q region */
     mpi_errno = MPIDI_CH3I_Seg_alloc(num_local * sizeof(MPID_nem_queue_t), (void **)&free_queues_p);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* Request recv q region */
     mpi_errno = MPIDI_CH3I_Seg_alloc(num_local * sizeof(MPID_nem_queue_t), (void **)&recv_queues_p);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* Request shared collectives barrier vars region */
     mpi_errno = MPIDI_CH3I_Seg_alloc(MPID_NEM_NUM_BARRIER_VARS * sizeof(MPID_nem_barrier_vars_t),
                                      (void **)&MPID_nem_mem_region.barrier_vars);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* Actually allocate the segment and assign regions to the pointers */
     mpi_errno = MPIDI_CH3I_Seg_commit(&MPID_nem_mem_region.memory, num_local, local_rank);
-    if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP (mpi_errno);
 
     /* init shared collectives barrier region */
     mpi_errno = MPID_nem_barrier_vars_init(MPID_nem_mem_region.barrier_vars);
-    if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP (mpi_errno);
 
     /* local procs barrier */
     mpi_errno = MPID_nem_barrier();
-    if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP (mpi_errno);
 
     /* find our cell region */
     MPID_nem_mem_region.Elements = cells_p[local_rank];
@@ -268,28 +302,28 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
     }
 
     mpi_errno = MPID_nem_coll_init();
-    if (mpi_errno) MPIU_ERR_POP (mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP (mpi_errno);
     
     /* This must be done before initializing the netmod so that the nemesis
        communicator creation hooks get registered (and therefore called) before
        the netmod hooks, giving the netmod an opportunity to override the
        nemesis collective function table. */
     mpi_errno = MPIDI_CH3U_Comm_register_create_hook(MPIDI_CH3I_comm_create, NULL);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     /* network init */
     if (MPID_nem_num_netmods)
     {
         mpi_errno = MPID_nem_choose_netmod();
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 	mpi_errno = MPID_nem_netmod_func->init(pg_p, pg_rank, &bc_val, &val_max_remaining);
-        if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+        if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     }
 
     /* Register detroy hooks after netmod init so the netmod hooks get called
        before nemesis hooks. */
     mpi_errno = MPIDI_CH3U_Comm_register_destroy_hook(MPIDI_CH3I_comm_destroy, NULL);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     
     /* set default route for external processes through network */
     for (idx = 0 ; idx < MPID_nem_mem_region.ext_procs ; idx++)
@@ -318,7 +352,7 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
     
     /* local barrier */
     mpi_errno = MPID_nem_barrier();
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     
     /* Allocate table of pointers to fastboxes */
@@ -364,28 +398,26 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
 
     /* publish business card */
     mpi_errno = MPIDI_PG_SetConnInfo(pg_rank, (const char *)publish_bc_orig);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     MPIU_Free(publish_bc_orig);
 
 
     mpi_errno = MPID_nem_barrier();
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     mpi_errno = MPID_nem_mpich_init();
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
     mpi_errno = MPID_nem_barrier();
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 #ifdef ENABLE_CHECKPOINTING
     mpi_errno = MPIDI_nem_ckpt_init();
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 #endif
 
 #ifdef PAPI_MONITOR
     my_papi_start( pg_rank );
 #endif /*PAPI_MONITOR   */
 
-#if ENABLE_NEM_STATISTICS
     MPID_nem_init_stats(num_local);
-#endif
 
     MPIU_CHKPMEM_COMMIT();
  fn_exit:
@@ -402,7 +434,7 @@ MPID_nem_init(int pg_rank, MPIDI_PG_t *pg_p, int has_parent ATTRIBUTE((unused)))
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_vc_init
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int
 MPID_nem_vc_init (MPIDI_VC_t *vc)
 {
@@ -446,7 +478,7 @@ MPID_nem_vc_init (MPIDI_VC_t *vc)
     /* MT we acquire the LMT CS here, b/c there is at least a theoretical race
      * on some fields, such as lmt_copy_buf.  In practice it's not an issue, but
      * this will keep DRD happy. */
-    MPIU_THREAD_CS_ENTER(LMT,);
+    MPID_THREAD_CS_ENTER(POBJ, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
 
     /* override rendezvous functions */
     vc->rndvSend_fn = MPID_nem_lmt_RndvSend;
@@ -505,23 +537,25 @@ MPID_nem_vc_init (MPIDI_VC_t *vc)
 
         vc_ch->lmt_copy_buf        = NULL;
         mpi_errno = MPIU_SHMW_Hnd_init(&(vc_ch->lmt_copy_buf_handle));
-        if(mpi_errno != MPI_SUCCESS) { MPIU_ERR_POP(mpi_errno); }
+        if(mpi_errno != MPI_SUCCESS) { MPIR_ERR_POP(mpi_errno); }
         mpi_errno = MPIU_SHMW_Hnd_init(&(vc_ch->lmt_recv_copy_buf_handle));
-        if(mpi_errno != MPI_SUCCESS) { MPIU_ERR_POP(mpi_errno); }
+        if(mpi_errno != MPI_SUCCESS) { MPIR_ERR_POP(mpi_errno); }
         vc_ch->lmt_queue.head      = NULL;
         vc_ch->lmt_queue.tail      = NULL;
         vc_ch->lmt_active_lmt      = NULL;
         vc_ch->lmt_enqueued        = FALSE;
+        vc_ch->lmt_rts_queue.head  = NULL;
+        vc_ch->lmt_rts_queue.tail  = NULL;
 
-        if (MPIR_PARAM_SHM_EAGER_MAX_SZ == -1)
+        if (MPIR_CVAR_NEMESIS_SHM_EAGER_MAX_SZ == -1)
             vc->eager_max_msg_sz = MPID_NEM_MPICH_DATA_LEN - sizeof(MPIDI_CH3_Pkt_t);
         else
-            vc->eager_max_msg_sz = MPIR_PARAM_SHM_EAGER_MAX_SZ;
+            vc->eager_max_msg_sz = MPIR_CVAR_NEMESIS_SHM_EAGER_MAX_SZ;
 
-        if (MPIR_PARAM_SHM_READY_EAGER_MAX_SZ == -2)
+        if (MPIR_CVAR_NEMESIS_SHM_READY_EAGER_MAX_SZ == -2)
             vc->ready_eager_max_msg_sz = vc->eager_max_msg_sz; /* force local ready sends to use LMT */
         else
-            vc->ready_eager_max_msg_sz = MPIR_PARAM_SHM_READY_EAGER_MAX_SZ;
+            vc->ready_eager_max_msg_sz = MPIR_CVAR_NEMESIS_SHM_READY_EAGER_MAX_SZ;
 
         MPIU_DBG_MSG(VC, VERBOSE, "vc using shared memory");
     }
@@ -555,7 +589,7 @@ MPID_nem_vc_init (MPIDI_VC_t *vc)
                              ));
         
         mpi_errno = MPID_nem_netmod_func->vc_init(vc);
-	if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+	if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
 /* FIXME: DARIUS -- enable this assert once these functions are implemented */
 /*         /\* iStartContigMsg iSendContig and sendNoncontig_fn must */
@@ -565,7 +599,7 @@ MPID_nem_vc_init (MPIDI_VC_t *vc)
 
     }
 
-    MPIU_THREAD_CS_EXIT(LMT,);
+    MPID_THREAD_CS_EXIT(POBJ, MPIR_THREAD_GLOBAL_ALLFUNC_MUTEX);
 
     /* FIXME: ch3 assumes there is a field called sendq_head in the ch
        portion of the vc.  This is unused in nemesis and should be set
@@ -584,7 +618,7 @@ MPID_nem_vc_init (MPIDI_VC_t *vc)
 #undef FUNCNAME
 #define FUNCNAME MPID_nem_vc_destroy
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 int
 MPID_nem_vc_destroy(MPIDI_VC_t *vc)
 {
@@ -597,7 +631,7 @@ MPID_nem_vc_destroy(MPIDI_VC_t *vc)
     MPIU_Free(vc_ch->pending_pkt);
 
     mpi_errno = MPID_nem_netmod_func->vc_destroy(vc);
-    if (mpi_errno) MPIU_ERR_POP(mpi_errno);
+    if (mpi_errno) MPIR_ERR_POP(mpi_errno);
 
     fn_exit:
     MPIDI_FUNC_EXIT(MPID_STATE_MPID_NEM_VC_DESTROY);
@@ -631,7 +665,7 @@ int MPID_nem_connect_to_root (const char *business_card, MPIDI_VC_t *new_vc)
 #undef FUNCNAME
 #define FUNCNAME get_local_procs
 #undef FCNAME
-#define FCNAME MPIDI_QUOTE(FUNCNAME)
+#define FCNAME MPL_QUOTE(FUNCNAME)
 static int get_local_procs(MPIDI_PG_t *pg, int our_pg_rank, int *num_local_p,
                            int **local_procs_p, int *local_rank_p)
 {

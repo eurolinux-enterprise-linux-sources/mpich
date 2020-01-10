@@ -13,6 +13,8 @@
 #pragma _HP_SECONDARY_DEF PMPI_Finalized  MPI_Finalized
 #elif defined(HAVE_PRAGMA_CRI_DUP)
 #pragma _CRI duplicate MPI_Finalized as PMPI_Finalized
+#elif defined(HAVE_WEAK_ATTRIBUTE)
+int MPI_Finalized(int *flag) __attribute__((weak,alias("PMPI_Finalized")));
 #endif
 /* -- End Profiling Symbol Block */
 
@@ -67,7 +69,7 @@ int MPI_Finalized( int *flag )
 
     /* ... body of routine ...  */
     
-    *flag = (MPIR_Process.initialized >= MPICH_POST_FINALIZED);
+    *flag = (OPA_load_int(&MPIR_Process.mpich_state) >= MPICH_POST_FINALIZED);
     
     /* ... end of body of routine ... */
 
@@ -80,8 +82,9 @@ int MPI_Finalized( int *flag )
     /* --BEGIN ERROR HANDLING-- */
 #   ifdef HAVE_ERROR_CHECKING
   fn_fail:
-    if (MPIR_Process.initialized == MPICH_WITHIN_MPI)
-    { 
+    if (OPA_load_int(&MPIR_Process.mpich_state) == MPICH_IN_INIT ||
+        OPA_load_int(&MPIR_Process.mpich_state) == MPICH_POST_INIT)
+    {
 	{
 	    mpi_errno = MPIR_Err_create_code(
 		mpi_errno, MPIR_ERR_RECOVERABLE, FCNAME, __LINE__, 
