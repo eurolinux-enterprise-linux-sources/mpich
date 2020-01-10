@@ -3,7 +3,7 @@
 Summary:	A high-performance implementation of MPI
 Name:		mpich
 Version:	3.0.4
-Release:	4%{?dist}
+Release:	7%{?dist}
 License:	MIT
 Group:		Development/Libraries
 URL:		http://www.mpich.org
@@ -160,10 +160,10 @@ cd src/pm/hydra && ./autogen.sh && cd ../../..
 	--with-hwloc-prefix=system				\
 	FC=%{opt_fc}						\
 	F77=%{opt_f77}						\
-	CFLAGS="%{m_option} -O2 %{?XFLAGS}"			\
-	CXXFLAGS="%{m_option} -O2 %{?XFLAGS}"			\
-	FCFLAGS="%{m_option} -O2 %{?XFLAGS}"			\
-	FFLAGS="%{m_option} -O2 %{?XFLAGS}"			\
+	CFLAGS="%{m_option} %{optflags} %{?XFLAGS}"			\
+	CXXFLAGS="%{m_option} %{optflags} %{?XFLAGS}"			\
+	FCFLAGS="%{m_option} %{optflags} %{?XFLAGS}"			\
+	FFLAGS="%{m_option} %{optflags} %{?XFLAGS}"			\
 	LDFLAGS='-Wl,-z,noexecstack'				\
 	MPICH2LIB_CFLAGS="%{?opt_cc_cflags}"			\
 	MPICH2LIB_CXXFLAGS="%{optflags}"			\
@@ -288,6 +288,16 @@ fi
 %{_mandir}/%{name}/man3/
 
 %changelog
+* Mon Mar 3 2014 Jay Fenlason <fenlason@redhat.com> - 3.0.4-7
+- Update build flags to fix
+  Resolves: rhbz1070778
+
+* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 3.0.4-6
+- Mass rebuild 2014-01-24
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 3.0.4-5
+- Mass rebuild 2013-12-27
+
 * Fri Oct 4 2013 Jay Fenlason <fenlason@redhat.com> 3.0.4-4.el7
 - Fix the module file to contain all the definitions we expect.
   Resolves: rhbz1001469
